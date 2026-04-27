@@ -108,19 +108,19 @@
 
 ## Phase 4 — Feature Layer
 
-- `[ ]` Create `FeatureService` class to compute and store reusable metrics
-- `[ ]` Implement `compute_monthly_features(user_id, month)`:
-  - `[ ]` Total spend
-  - `[ ]` Category distribution ratios
-  - `[ ]` Savings rate
-  - `[ ]` Income estimate
-  - `[ ]` Recurring expense list
-- `[ ]` Implement `compute_weekly_features(user_id, week)`
-- `[ ]` Implement `compute_user_profile(user_id)`:
-  - `[ ]` Spending patterns over time
-  - `[ ]` SMS-derived transaction patterns
+- `[x]` Create `FeatureService` class to compute and store reusable metrics
+- `[x]` Implement `compute_monthly_features(user_id, month)`:
+  - `[x]` Total spend
+  - `[x]` Category distribution ratios
+  - `[x]` Savings rate
+  - `[x]` Income estimate
+  - `[x]` Recurring expense list
+- `[x]` Implement `compute_weekly_features(user_id, week)`
+- `[x]` Implement `compute_user_profile(user_id)`:
+  - `[x]` Spending patterns over time
+  - `[x]` SMS-derived transaction patterns
 - `[ ]` Schedule feature recomputation after every new batch of transactions
-- `[ ]` Expose `GET /features/monthly` and `GET /features/profile` endpoints
+- `[x]` Expose `GET /features/monthly` and `GET /features/profile` endpoints
 
 ---
 

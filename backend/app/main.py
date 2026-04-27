@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import os
 
 from app.core.config import settings
-from app.api.endpoints import chat, dashboard, ingestion
+from app.api.endpoints import chat, dashboard, ingestion, features
 from app.services.retriever import retriever
 from contextlib import asynccontextmanager
 
@@ -50,3 +50,4 @@ async def health():
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"])
+app.include_router(features.router, prefix="/api/v1/features", tags=["features"])
