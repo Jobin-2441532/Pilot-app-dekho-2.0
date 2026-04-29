@@ -33,51 +33,51 @@
 > Execute in priority order before resuming Phase 11 onwards.
 
 ### 0.1 — 🔴 Critical: Wire User Isolation (JWT) on All Data Endpoints
-- `[ ]` Import `get_current_user` into `dashboard.py` — protect all routes
-- `[ ]` Import `get_current_user` into `features.py` — protect all routes
+- `[x]` Import `get_current_user` into `dashboard.py` — protect all routes
+- `[x]` Import `get_current_user` into `features.py` — protect all routes
 - `[ ]` Import `get_current_user` into `ingestion.py` — protect all routes
-- `[ ]` Replace all `db.query(User).first()` with `current_user` from JWT dependency
-- `[ ]` Replace all hardcoded `user_id=1` with `current_user.id`
-- `[ ]` Wire user isolation into `chat.py` chatbot endpoint
+- `[x]` Replace all `db.query(User).first()` with `current_user` from JWT dependency
+- `[x]` Replace all hardcoded `user_id=1` with `current_user.id`
+- `[x]` Wire user isolation into `chat.py` chatbot endpoint
 
 ### 0.2 — 🔴 Critical: Expand Transactions Table Schema
-- `[ ]` Add `vpa` column (UPI VPA e.g. `zomato@upi`)
-- `[ ]` Add `bank` column
-- `[ ]` Add `account_ref` column
-- `[ ]` Add `sub_category` column
-- `[ ]` Add `confidence` column (ML confidence score 0.0–1.0)
-- `[ ]` Add `review_status` column (`pending` / `reviewed` / `auto_assigned`)
-- `[ ]` Add `is_recurring` boolean column
-- `[ ]` Add `is_refund` boolean column
-- `[ ]` Add `is_cashback` boolean column
-- `[ ]` Add `is_income` boolean column
-- `[ ]` Add `net_amount` column (amount after refund/cashback)
-- `[ ]` Add `tags` column (comma-separated: recurring, refund, p2p)
-- `[ ]` Add `currency` column (default `INR`)
-- `[ ]` Run Alembic migration
+- `[x]` Add `vpa` column (UPI VPA e.g. `zomato@upi`)
+- `[x]` Add `bank` column
+- `[x]` Add `account_ref` column
+- `[x]` Add `sub_category` column
+- `[x]` Add `confidence` column (ML confidence score 0.0–1.0)
+- `[x]` Add `review_status` column (`pending` / `reviewed` / `auto_assigned`)
+- `[x]` Add `is_recurring` boolean column
+- `[x]` Add `is_refund` boolean column
+- `[x]` Add `is_cashback` boolean column
+- `[x]` Add `is_income` boolean column
+- `[x]` Add `net_amount` column (amount after refund/cashback)
+- `[x]` Add `tags` column (comma-separated: recurring, refund, p2p)
+- `[x]` Add `currency` column (default `INR`)
+- `[x]` Run Alembic migration
 
 ### 0.3 — 🔴 Critical: Fix raw_records Table
-- `[ ]` Add `user_id` FK column to `raw_records`
-- `[ ]` Add `parsed_status` column (`pending` / `processed` / `unrecognised`)
-- `[ ]` Add `raw_data` column (for SMS text — currently only `raw_text`)
-- `[ ]` Run Alembic migration
+- `[x]` Add `user_id` FK column to `raw_records`
+- `[x]` Add `parsed_status` column (`pending` / `processed` / `unrecognised`)
+- `[x]` Add `raw_data` column (for SMS text — currently only `raw_text`)
+- `[x]` Run Alembic migration
 
 ### 0.4 — 🟡 Important: Add merchant_mappings Table (needed for Phase 5 ML)
-- `[ ]` Create `merchant_mappings` model (user_id, merchant_key, category, sub_category, confidence_override, usage_count)
-- `[ ]` Add UNIQUE constraint on (user_id, merchant_key)
-- `[ ]` Run Alembic migration
-- `[ ]` Expose `GET /api/v1/feedback/merchant-mappings` endpoint
+- `[x]` Create `merchant_mappings` model (user_id, merchant_key, category, sub_category, confidence_override, usage_count)
+- `[x]` Add UNIQUE constraint on (user_id, merchant_key)
+- `[x]` Run Alembic migration
+- `[x]` Expose `GET /api/v1/feedback/merchant-mappings` endpoint
 
 ### 0.5 — 🟡 Important: Add feedback_logs Table (needed for Phase 5 ML)
-- `[ ]` Create `feedback_logs` model (user_id, transaction_id, original_category, corrected_category, original_confidence)
-- `[ ]` Run Alembic migration
-- `[ ]` Expose `POST /api/v1/feedback/correct` endpoint (user corrects a category)
-- `[ ]` Expose `GET /api/v1/feedback/stats` endpoint
+- `[x]` Create `feedback_logs` model (user_id, transaction_id, original_category, corrected_category, original_confidence)
+- `[x]` Run Alembic migration
+- `[x]` Expose `POST /api/v1/feedback/correct` endpoint (user corrects a category)
+- `[x]` Expose `GET /api/v1/feedback/stats` endpoint
 
 ### 0.6 — 🟡 Important: Missing Write Endpoints
-- `[ ]` `POST /api/v1/dashboard/goals` — create a new savings goal
-- `[ ]` `POST /api/v1/dashboard/profile/budget` — update monthly budget limit
-- `[ ]` `GET /api/v1/review/queue` — transactions pending user review
+- `[x]` `POST /api/v1/dashboard/goals` — create a new savings goal
+- `[x]` `POST /api/v1/dashboard/profile/budget` — update monthly budget limit
+- `[x]` `GET /api/v1/review/queue` — transactions pending user review
 
 ### 0.7 — 🟢 Nice-to-have: Missing User Columns
 - `[ ]` Add `phone` to `users` table
