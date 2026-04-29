@@ -23,3 +23,6 @@ class User(Base):
     assets = relationship("Asset", back_populates="user")
     uploaded_files = relationship("UploadedFile", back_populates="user")
     recommendations = relationship("Recommendation", back_populates="user")
+    merchant_mappings = relationship("MerchantMapping", back_populates="user")
+    feedback_logs = relationship("FeedbackLog", back_populates="user")
+

@@ -1,6 +1,6 @@
 """
 Features API — exposes computed financial metrics for use by the frontend
-and ML services.
+and ML services. All endpoints are JWT-protected.
 """
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import User
 from app.services.feature_service import feature_service
+from app.api.endpoints.auth import get_current_user
 
 router = APIRouter()
 
@@ -22,24 +23,19 @@ def _current_week() -> str:
     return f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
 
 
-def _get_uid(db: Session) -> int:
-    user = db.query(User).first()
-    return user.id if user else 1
-
-
 @router.get("/monthly")
 def get_monthly_features(
     month: str = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return aggregated financial features for a calendar month.
     Query param: `month=YYYY-MM` (defaults to current month)
     """
     month = month or _current_month()
-    uid = _get_uid(db)
     try:
-        return feature_service.compute_monthly_features(db, uid, month)
+        return feature_service.compute_monthly_features(db, current_user.id, month)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -47,16 +43,16 @@ def get_monthly_features(
 @router.get("/weekly")
 def get_weekly_features(
     week: str = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return spend breakdown for an ISO calendar week.
     Query param: `week=YYYY-WNN` e.g. `2026-W17` (defaults to current week)
     """
     week = week or _current_week()
-    uid = _get_uid(db)
     try:
-        return feature_service.compute_weekly_features(db, uid, week)
+        return feature_service.compute_weekly_features(db, current_user.id, week)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -64,7 +60,8 @@ def get_weekly_features(
 @router.get("/profile")
 def get_user_profile(
     months: int = 3,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Return a rolling financial profile over the last N months.
@@ -72,5 +69,5 @@ def get_user_profile(
     """
     if months < 1 or months > 24:
         raise HTTPException(status_code=400, detail="months must be between 1 and 24")
-    uid = _get_uid(db)
-    return feature_service.compute_user_profile(db, uid, months)
+    return feature_service.compute_user_profile(db, current_user.id, months)
+

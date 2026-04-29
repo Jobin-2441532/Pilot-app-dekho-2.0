@@ -5,7 +5,7 @@ import os
 
 from app.core.config import settings
 from app.core.logging_config import logger
-from app.api.endpoints import chat, dashboard, ingestion, features, auth, jobs
+from app.api.endpoints import chat, dashboard, ingestion, features, auth, jobs, feedback
 from app.services.retriever import retriever
 from app.services.storage import storage_service
 from contextlib import asynccontextmanager
@@ -61,5 +61,6 @@ app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["ingestion"])
 app.include_router(features.router, prefix="/api/v1/features", tags=["features"])
+app.include_router(feedback.router, prefix="/api/v1/feedback", tags=["feedback"])
 app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["jobs"])
 

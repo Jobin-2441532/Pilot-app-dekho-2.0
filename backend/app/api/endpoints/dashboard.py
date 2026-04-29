@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 from app.core.database import get_db
 from app.models import Transaction, SavingsGoal, User, Asset, Recommendation
+from app.api.endpoints.auth import get_current_user
 
 router = APIRouter()
 
@@ -13,6 +14,7 @@ router = APIRouter()
 @router.get("/transactions")
 def get_transactions(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     skip: int = Query(0, ge=0, description="Number of records to skip (for pagination)"),
     limit: int = Query(50, ge=1, le=500, description="Max records to return"),
     from_date: Optional[str] = Query(None, description="Filter from date YYYY-MM-DD"),
@@ -20,7 +22,7 @@ def get_transactions(
     category: Optional[str] = Query(None, description="Filter by category"),
     direction: Optional[str] = Query(None, description="Filter by direction: debit | credit"),
 ):
-    q = db.query(Transaction).order_by(Transaction.date.desc())
+    q = db.query(Transaction).filter(Transaction.user_id == current_user.id).order_by(Transaction.date.desc())
 
     if from_date:
         q = q.filter(Transaction.date >= from_date)
@@ -58,11 +60,12 @@ def get_transactions(
 @router.get("/transactions/summary")
 def get_transactions_summary(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     from_date: Optional[str] = Query(None, description="Period start YYYY-MM-DD"),
     to_date: Optional[str] = Query(None, description="Period end YYYY-MM-DD"),
 ):
     """Period-based aggregate: total spend/credit + category breakdown."""
-    q = db.query(Transaction)
+    q = db.query(Transaction).filter(Transaction.user_id == current_user.id)
     if from_date:
         q = q.filter(Transaction.date >= from_date)
     if to_date:
@@ -75,7 +78,7 @@ def get_transactions_summary(
     # Category breakdown (debits only)
     cat_q = (
         db.query(Transaction.category, func.sum(Transaction.amount).label("total"))
-        .filter(Transaction.direction == "debit")
+        .filter(Transaction.user_id == current_user.id, Transaction.direction == "debit")
     )
     if from_date:
         cat_q = cat_q.filter(Transaction.date >= from_date)
@@ -100,8 +103,8 @@ def get_transactions_summary(
 # Goals
 # ---------------------------------------------------------------------------
 @router.get("/goals")
-def get_goals(db: Session = Depends(get_db)):
-    rows = db.query(SavingsGoal).all()
+def get_goals(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rows = db.query(SavingsGoal).filter(SavingsGoal.user_id == current_user.id).all()
 
     emoji_map = {"Emergency Fund": "🛡️", "Goa Trip": "🏖️", "New Laptop": "💻"}
     color_map = {"Emergency Fund": "#5C3D2E", "Goa Trip": "#2563EB", "New Laptop": "#7C3AED"}
@@ -121,6 +124,35 @@ def get_goals(db: Session = Depends(get_db)):
     ]
 
 
+from pydantic import BaseModel
+
+class GoalCreate(BaseModel):
+    name: str
+    target_amount: float
+    current_amount: float = 0
+    deadline: Optional[str] = None
+
+@router.post("/goals", status_code=201)
+def create_goal(
+    body: GoalCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new savings goal for the authenticated user."""
+    goal = SavingsGoal(
+        user_id=current_user.id,
+        name=body.name,
+        target_amount=body.target_amount,
+        current_amount=body.current_amount,
+        deadline=body.deadline,
+        status="active",
+    )
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    return {"id": goal.id, "name": goal.name, "target_amount": goal.target_amount}
+
+
 # ---------------------------------------------------------------------------
 # Profile — income now derived from income_range
 # ---------------------------------------------------------------------------
@@ -134,10 +166,8 @@ INCOME_RANGE_MAP = {
 }
 
 @router.get("/profile")
-def get_profile(db: Session = Depends(get_db)):
-    user = db.query(User).first()
-    if not user:
-        return {}
+def get_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    user = current_user  # JWT-scoped — always the right user
 
     # Derive monthly income from income_range band; fall back to monthly_budget
     monthly_income = INCOME_RANGE_MAP.get(user.income_range, user.monthly_budget or 0)
@@ -153,15 +183,30 @@ def get_profile(db: Session = Depends(get_db)):
     }
 
 
+class BudgetUpdate(BaseModel):
+    monthly_budget: float
+
+@router.post("/profile/budget")
+def update_budget(
+    body: BudgetUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update the authenticated user's monthly budget."""
+    current_user.monthly_budget = body.monthly_budget
+    db.commit()
+    return {"monthly_budget": current_user.monthly_budget}
+
+
 # ---------------------------------------------------------------------------
 # Summary (all-time category totals)
 # ---------------------------------------------------------------------------
 @router.get("/summary")
-def get_summary(db: Session = Depends(get_db)):
-    """All-time category spend totals."""
+def get_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """All-time category spend totals for the authenticated user."""
     rows = (
         db.query(Transaction.category, func.sum(Transaction.amount).label("total"))
-        .filter(Transaction.direction == "debit")
+        .filter(Transaction.user_id == current_user.id, Transaction.direction == "debit")
         .group_by(Transaction.category)
         .order_by(func.sum(Transaction.amount).desc())
         .all()
@@ -169,12 +214,9 @@ def get_summary(db: Session = Depends(get_db)):
     return [{"category": row.category, "total": round(row.total, 2)} for row in rows]
 
 
-# ---------------------------------------------------------------------------
-# Assets
-# ---------------------------------------------------------------------------
 @router.get("/assets")
-def get_assets(db: Session = Depends(get_db)):
-    rows = db.query(Asset).all()
+def get_assets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rows = db.query(Asset).filter(Asset.user_id == current_user.id).all()
     return [
         {
             "id": f"a{row.id}",
@@ -191,8 +233,8 @@ def get_assets(db: Session = Depends(get_db)):
 # Opportunities / Recommendations
 # ---------------------------------------------------------------------------
 @router.get("/opportunities")
-def get_opportunities(db: Session = Depends(get_db)):
-    rows = db.query(Recommendation).all()
+def get_opportunities(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rows = db.query(Recommendation).filter(Recommendation.user_id == current_user.id).all()
 
     emoji_map = {
         "Safety first": "🛡️",
@@ -220,4 +262,33 @@ def get_opportunities(db: Session = Depends(get_db)):
         }
         for row in rows
     ]
+
+
+# ---------------------------------------------------------------------------
+# Review Queue — transactions pending user review
+# ---------------------------------------------------------------------------
+@router.get("/review/queue")
+def get_review_queue(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Return transactions where review_status is 'pending'."""
+    rows = (
+        db.query(Transaction)
+        .filter(Transaction.user_id == current_user.id, Transaction.review_status == "pending")
+        .order_by(Transaction.date.desc())
+        .limit(50)
+        .all()
+    )
+    return [
+        {
+            "id": row.id,
+            "date": row.date,
+            "merchant": row.merchant,
+            "amount": row.amount,
+            "direction": row.direction,
+            "category": row.category,
+            "confidence": row.confidence,
+            "review_status": row.review_status,
+        }
+        for row in rows
+    ]
+
 

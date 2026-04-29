@@ -1,6 +1,6 @@
 # Dekho Backend — Architecture TODO List
 
-> Based on `dekho_prototype_full.md` and analysis of the current backend state.
+> Based on `dekho_architecture.md` gap analysis (2026-04-29). ~65% aligned.
 
 ---
 
@@ -9,19 +9,97 @@
 | Layer | Status |
 |---|---|
 | FastAPI + Uvicorn | ✅ Running |
-| SQLite DB (basic schema) | ✅ Exists but incomplete |
-| Transactions / Goals / Users APIs | ✅ Basic endpoints working |
-| PostgreSQL | ✅ Running (via Docker) |
-| MinIO (file storage) | ❌ Not set up |
-| Redis + Celery | ❌ Not set up |
-| File Upload (PDF/CSV) | ✅ Ingestion API implemented |
-| SMS Paste & Parsing | ✅ Ingestion API implemented |
-| Feature Layer | ❌ Not implemented |
-| ML Models (Categorize, Behavior, Recommend) | ❌ Not connected |
-| Authentication & Authorization | ❌ Not implemented |
-| Audit Logging | ❌ Not implemented |
+| PostgreSQL (via Docker) | ✅ Running |
+| MinIO (file storage) | ✅ Running |
+| Redis + Celery | ✅ Set up |
+| JWT Auth (register/login/refresh) | ✅ Implemented |
+| File Upload (PDF/CSV parsing) | ✅ Implemented |
+| SMS Paste & Parsing | ✅ Implemented |
+| Normalization Service | ✅ Implemented |
+| Feature Layer (monthly/weekly/profile) | ✅ Implemented |
+| Chatbot (Gemini + FAISS RAG) | ✅ Implemented |
+| User Isolation (JWT on data endpoints) | ❌ Built but NOT wired |
+| Transactions table (ML-ready schema) | ❌ Thin — missing 15+ columns |
+| merchant_mappings table | ❌ Missing |
+| feedback_logs table | ❌ Missing |
+| ML Models (Categorize, Behavior, Recommend) | ⏳ Parked (Phase 5) |
+| Frontend Integration | ❌ Not started |
 
 ---
+
+## Phase 0 — Architecture Gap Fixes (from gap_analysis.md)
+
+> These gaps were identified by comparing the running backend to `dekho_architecture.md`.
+> Execute in priority order before resuming Phase 11 onwards.
+
+### 0.1 — 🔴 Critical: Wire User Isolation (JWT) on All Data Endpoints
+- `[ ]` Import `get_current_user` into `dashboard.py` — protect all routes
+- `[ ]` Import `get_current_user` into `features.py` — protect all routes
+- `[ ]` Import `get_current_user` into `ingestion.py` — protect all routes
+- `[ ]` Replace all `db.query(User).first()` with `current_user` from JWT dependency
+- `[ ]` Replace all hardcoded `user_id=1` with `current_user.id`
+- `[ ]` Wire user isolation into `chat.py` chatbot endpoint
+
+### 0.2 — 🔴 Critical: Expand Transactions Table Schema
+- `[ ]` Add `vpa` column (UPI VPA e.g. `zomato@upi`)
+- `[ ]` Add `bank` column
+- `[ ]` Add `account_ref` column
+- `[ ]` Add `sub_category` column
+- `[ ]` Add `confidence` column (ML confidence score 0.0–1.0)
+- `[ ]` Add `review_status` column (`pending` / `reviewed` / `auto_assigned`)
+- `[ ]` Add `is_recurring` boolean column
+- `[ ]` Add `is_refund` boolean column
+- `[ ]` Add `is_cashback` boolean column
+- `[ ]` Add `is_income` boolean column
+- `[ ]` Add `net_amount` column (amount after refund/cashback)
+- `[ ]` Add `tags` column (comma-separated: recurring, refund, p2p)
+- `[ ]` Add `currency` column (default `INR`)
+- `[ ]` Run Alembic migration
+
+### 0.3 — 🔴 Critical: Fix raw_records Table
+- `[ ]` Add `user_id` FK column to `raw_records`
+- `[ ]` Add `parsed_status` column (`pending` / `processed` / `unrecognised`)
+- `[ ]` Add `raw_data` column (for SMS text — currently only `raw_text`)
+- `[ ]` Run Alembic migration
+
+### 0.4 — 🟡 Important: Add merchant_mappings Table (needed for Phase 5 ML)
+- `[ ]` Create `merchant_mappings` model (user_id, merchant_key, category, sub_category, confidence_override, usage_count)
+- `[ ]` Add UNIQUE constraint on (user_id, merchant_key)
+- `[ ]` Run Alembic migration
+- `[ ]` Expose `GET /api/v1/feedback/merchant-mappings` endpoint
+
+### 0.5 — 🟡 Important: Add feedback_logs Table (needed for Phase 5 ML)
+- `[ ]` Create `feedback_logs` model (user_id, transaction_id, original_category, corrected_category, original_confidence)
+- `[ ]` Run Alembic migration
+- `[ ]` Expose `POST /api/v1/feedback/correct` endpoint (user corrects a category)
+- `[ ]` Expose `GET /api/v1/feedback/stats` endpoint
+
+### 0.6 — 🟡 Important: Missing Write Endpoints
+- `[ ]` `POST /api/v1/dashboard/goals` — create a new savings goal
+- `[ ]` `POST /api/v1/dashboard/profile/budget` — update monthly budget limit
+- `[ ]` `GET /api/v1/review/queue` — transactions pending user review
+
+### 0.7 — 🟢 Nice-to-have: Missing User Columns
+- `[ ]` Add `phone` to `users` table
+- `[ ]` Add `is_active` boolean to `users` table
+- `[ ]` Add `user_type` (student/working/freelancer/business) to `users`
+- `[ ]` Add `shopping_behavior` and `food_habit` to `users`
+- `[ ]` Run Alembic migration
+
+### 0.8 — 🟢 Nice-to-have: Insights Endpoints
+- `[ ]` `GET /api/v1/insights/recurring` — recurring expenses list from FeatureService
+- `[ ]` `GET /api/v1/insights/top-merchants` — top merchants by spend
+- `[ ]` `GET /api/v1/insights/monthly-summary` — income/expense/savings for month
+
+### 0.9 — 🟢 Post Phase 5: Advanced Tables
+- `[ ]` Create `recurring_expenses` table (detected subscription/EMI patterns)
+- `[ ]` Create `split_groups` table (bill splitting)
+- `[ ]` Create `wallet_floats` table (digital wallet tracking)
+- `[ ]` Create `social_contacts` table (known UPI VPAs)
+- `[ ]` Create `user_salary_profiles` table
+
+---
+
 
 ## Phase 1 — Data Ingestion
 
