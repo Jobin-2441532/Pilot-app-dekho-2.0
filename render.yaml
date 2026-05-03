@@ -1,0 +1,31 @@
+services:
+  # The unified Backend Service (Main + ML)
+  - type: web
+    name: dekho-api
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: bash start-render.sh
+    envVars:
+      - key: DATABASE_URL
+        sync: false # You will paste your Neon DB URL in the Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false # Paste your Gemini Key in the dashboard
+      - key: JWT_SECRET_KEY
+        generateValue: true # Render will auto-generate a secure random key
+      - key: ML_SERVICE_URL
+        value: http://127.0.0.1:8001 # Points to the background ML service
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # The Frontend Service
+  - type: web
+    name: dekho-web
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: dekho-api
+          envVarKey: RENDER_EXTERNAL_URL
