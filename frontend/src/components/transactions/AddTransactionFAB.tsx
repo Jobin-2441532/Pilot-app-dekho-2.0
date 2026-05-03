@@ -32,6 +32,7 @@ export default function AddTransactionFAB() {
       setAmount('')
       setMerchant('')
       // Optionally trigger a refresh or toast here
+      window.location.reload()
     } catch (err) {
       console.error('Failed to add transaction', err)
       alert('Failed to add offline spending.')

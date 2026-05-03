@@ -59,6 +59,31 @@
 .committedCardsContainer { display: flex; flex-direction: column; gap: var(--space-3); }
 
 /* AI insight card */
+.aiCard { background: #6B3A2A; color: #fff; padding: var(--space-5); border-radius: var(--radius-2xl); position: relative; overflow: hidden; display: flex; flex-direction: column; gap: var(--space-3); }
+.aiWatermark { position: absolute; right: -20px; top: -20px; font-size: 100px; opacity: 0.05; pointer-events: none; }
+.aiCardLabel { font-family: var(--font-body); font-size: 10px; font-weight: var(--font-bold); letter-spacing: 0.05em; opacity: 0.8; }
+.aiCardContent { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.aiCardTitle { font-family: var(--font-headline); font-size: var(--text-xl); font-weight: var(--font-bold); line-height: 1.2; flex: 1; }
+.aiCardBadgeWrap { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: var(--radius-sm); }
+.aiCardBadge { font-family: var(--font-body); font-size: var(--text-sm); font-weight: var(--font-bold); }
+.aiCardSub { font-family: var(--font-body); font-size: var(--text-sm); opacity: 0.9; line-height: 1.4; }
+.aiTarget { margin-top: var(--space-2); }
+.aiTargetHeader { display: flex; justify-content: space-between; font-family: var(--font-body); font-size: 10px; font-weight: var(--font-bold); letter-spacing: 0.05em; opacity: 0.8; margin-bottom: 6px; }
+.aiTargetTrack { height: 6px; background: rgba(0,0,0,0.2); border-radius: var(--radius-full); }
+.aiTargetFill { height: 100%; background: #4edea3; border-radius: var(--radius-full); }
+
+/* Review Card */
+.reviewCard { background: var(--bg-surface-high); border-radius: var(--radius-xl); padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background var(--transition-fast); }
+.reviewCard:active { background: var(--bg-surface-highest); }
+.reviewLeft { display: flex; align-items: center; gap: var(--space-3); }
+.reviewIcon { font-size: var(--text-2xl); }
+.reviewDots { display: flex; gap: 4px; margin-bottom: 4px; }
+.reviewDots span { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--color-negative); }
+.reviewDots span:nth-child(2) { opacity: 0.6; }
+.reviewDots span:nth-child(3) { opacity: 0.3; }
+.reviewText { font-family: var(--font-body); font-size: var(--text-sm); font-weight: var(--font-semibold); color: var(--color-on-surface); }
+.reviewChevron { font-size: var(--text-xl); color: var(--color-muted); }
+
 /* Heatmap */
 .heatmapSub { font-family: var(--font-body); font-size: var(--text-xs); color: var(--color-muted); }
 .heatmapCard { background: var(--bg-card); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: var(--shadow-sm); }
