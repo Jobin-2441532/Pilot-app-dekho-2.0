@@ -25,10 +25,10 @@ async def lifespan(app: FastAPI):
     from app.core.database import init_db
     init_db()
     logger.info("Database tables ready (Neon warmup complete).")
-    logger.info("Pre-loading FAISS Database into memory...")
-    if not retriever.is_ready:
-        retriever.load()
-    logger.info("FAISS Initialized!")
+    # Removed FAISS pre-loading to prevent memory limits/hangs on Render free tier
+    # if not retriever.is_ready:
+    #     retriever.load()
+    # logger.info("FAISS Initialized!")
     logger.info(f"MinIO available: {storage_service.is_available()}")
     yield
     logger.info("Dekho API shutting down.")
