@@ -2,8 +2,8 @@
 # Exit on any error
 set -e
 
-echo "Installing dependencies..."
-pip install --no-cache-dir -r backend/requirements.txt
+echo "Skipping pip install on start..."
+# pip install --no-cache-dir -r backend/requirements.txt
 # ml_service just needs fastapi and uvicorn, which are already in backend/requirements.txt
 
 echo "Starting ML Service in the background on port 8001..."
