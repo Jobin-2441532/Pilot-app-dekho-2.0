@@ -22,6 +22,11 @@ const POINTS = [
     title: 'Assets & Grow Are Static Demos',
     body: 'The Assets and Grow sections are illustrative demos only. Live investment data will depend on future licensing agreements and financial data partnerships.',
   },
+  {
+    icon: '📱',
+    title: 'Install Dekho on Your Phone',
+    body: 'To add this app to your home screen: tap the ⋮ three-dot menu in your browser → "Add to Home Screen" → "Install Dekho". It works just like a native app!',
+  },
 ]
 
 interface Props {
