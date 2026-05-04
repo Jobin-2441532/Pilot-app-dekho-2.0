@@ -330,11 +330,16 @@ export default function Home() {
 
           <div className={styles.quickAddWrap}>
             {[
-              "Spent INR 450.00 on Zomato via UPI on 22-04-26. Bal: INR 12,345",
-              "Your A/C XX1234 has been debited by Rs 1500 for Electricity Bill on 25-04-2026. Available Bal Rs 45,000",
+              "Spent INR 450.00 on Zomato via UPI. Bal: INR 12,345",
+              "Your A/C XX1234 has been debited by Rs 1500 for Electricity Bill. Available Bal Rs 45,000",
               "Paid INR 800.00 to Netflix via Credit Card. Outstanding: INR 5,400",
-              "INR 3,000.00 debited from a/c XX5678 for Loan EMI on 20-04-2026.",
-              "Amount of INR 120.00 spent on Uber via UPI on 27-04-2026."
+              "INR 3,000.00 debited from a/c XX5678 for Loan EMI.",
+              "Amount of INR 120.00 spent on Uber via UPI.",
+              "INR 500.00 paid to Rahul Sharma via UPI. Available balance: INR 2,500.",
+              "Debited Rs 2,500 from A/C XX8901 for Amazon Shopping.",
+              "Rs 150 transferred to vendor via Paytm. Bal: Rs 8,400",
+              "Paid INR 1,200.00 at Apollo Pharmacy. A/c balance INR 33,000",
+              "Sent Rs 2,000 to John Doe for dinner split via UPI."
             ].map((msg, idx) => (
               <button
                 key={idx}

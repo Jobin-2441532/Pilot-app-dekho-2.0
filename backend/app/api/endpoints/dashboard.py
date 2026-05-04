@@ -408,6 +408,7 @@ def get_review_queue(db: Session = Depends(get_db), current_user: User = Depends
             "category": row.category,
             "confidence": row.confidence,
             "review_status": row.review_status,
+            "raw_sms": row.raw_sms,
         }
         for row in rows
     ]
