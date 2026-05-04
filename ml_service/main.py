@@ -53,14 +53,7 @@ _DB_URL = os.getenv("DATABASE_URL", "postgresql://dekho:dekho_password@localhost
 def get_conn():
     """Return a psycopg2 connection using DATABASE_URL from environment."""
     try:
-        r = urlparse(_DB_URL)
-        conn = psycopg2.connect(
-            host=r.hostname,
-            port=r.port or 5432,
-            dbname=r.path.lstrip('/'),
-            user=r.username,
-            password=r.password,
-        )
+        conn = psycopg2.connect(_DB_URL)
         return conn
     except Exception as e:
         raise HTTPException(503, f"Database connection failed: {e}")
