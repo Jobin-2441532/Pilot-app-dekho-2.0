@@ -7,7 +7,7 @@
  */
 import { useState, useEffect } from 'react'
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:8000`
+const BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`
 
 export interface InsightsData {
   home: {

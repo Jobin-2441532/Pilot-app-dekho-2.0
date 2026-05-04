@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
 from app.api.schemas import ChatRequest, ChatResponse, ChatMessage, SourceItem, ChatActionRequest, ChatActionResponse
-# Removed unused retriever import
+from app.services.retriever import retriever
 from app.services.gemini_service import generate_chat_response
 from app.core.database import get_db
 from app.models import User, Transaction, SavingsGoal, ChatSession

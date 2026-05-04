@@ -6,7 +6,7 @@ import { useInsights } from '../hooks/useInsights'
 import api from '../lib/api'
 import styles from './Budgets.module.css'
 
-const API = import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:8000`
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`
 
 interface BudgetCategory {
   label: string

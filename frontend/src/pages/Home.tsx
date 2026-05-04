@@ -9,7 +9,7 @@ import api from '../lib/api'
 import { ReflectionCard } from '../components/ui/ReflectionCard'
 import styles from './Home.module.css'
 
-const API = import.meta.env.VITE_API_BASE_URL ?? `http://${window.location.hostname}:8000`
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`
 
 function getGreeting() {
   const h = new Date().getHours()

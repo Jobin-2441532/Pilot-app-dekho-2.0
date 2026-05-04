@@ -5,7 +5,7 @@ import { SkeletonCard } from '../components/ui/LoadingState'
 import { useInsights } from '../hooks/useInsights'
 import styles from './Expenses.module.css'
 
-const API = import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:8000`
+const API = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`
 
 const CATEGORY_EMOJI: Record<string, string> = {
   'Food & Dining': '🍴', 'Shopping': '🛍️', 'Transport': '🚗',
