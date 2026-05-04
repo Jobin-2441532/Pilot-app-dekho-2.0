@@ -172,10 +172,10 @@ export default function TransactionsList() {
 
           {transactions.filter(tx => {
             if (filterMode === "All") return true;
-            if (filterMode === "Credit") return tx.type === "credit";
-            if (filterMode === "Debit") return tx.type === "debit";
-            if (filterMode === "UPI") return tx.payment_method?.toLowerCase().includes("upi");
-            if (filterMode === "Card") return tx.payment_method?.toLowerCase().includes("card");
+            if (filterMode === "Credit") return (tx.type || "").toLowerCase() === "credit";
+            if (filterMode === "Debit") return (tx.type || "").toLowerCase() === "debit";
+            if (filterMode === "UPI") return (tx.payment_method || "").toLowerCase().includes("upi");
+            if (filterMode === "Card") return (tx.payment_method || "").toLowerCase().includes("card");
             return true;
           }).map((tx: any) => (
             <div key={tx.id} className={styles.txRow}>
