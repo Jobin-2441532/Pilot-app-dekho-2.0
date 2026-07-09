@@ -144,7 +144,7 @@ async def _gemini_generate(
         t0 = time.perf_counter()
         chat = model.start_chat(history=gemini_history)
         response = await asyncio.wait_for(
-            asyncio.to_thread(chat.send_message, user_message),
+            chat.send_message_async(user_message),
             timeout=settings.llm_timeout_seconds,
         )
         elapsed = time.perf_counter() - t0
@@ -201,13 +201,14 @@ async def _gemini_stream(
         t0 = time.perf_counter()
         chat = model.start_chat(history=gemini_history)
 
-        # Gemini streaming is synchronous — run in thread to avoid blocking
-        response = await asyncio.to_thread(
-            chat.send_message, user_message, stream=True
+        # Gemini supports native async streaming
+        response = await asyncio.wait_for(
+            chat.send_message_async(user_message, stream=True),
+            timeout=settings.llm_timeout_seconds
         )
 
         token_count = 0
-        for chunk in response:
+        async for chunk in response:
             text = chunk.text if hasattr(chunk, "text") else ""
             if text:
                 token_count += 1
