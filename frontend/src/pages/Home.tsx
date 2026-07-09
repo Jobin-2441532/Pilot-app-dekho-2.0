@@ -207,12 +207,13 @@ export default function Home() {
 
   if (loading && transactions.length === 0) return <GlobalLoader />
 
-  const budget = budgets.length > 0 ? budgets.reduce((sum, cat) => sum + (cat.budget || 0), 0) : (profile?.monthlyBudget ?? profile?.monthly_budget ?? 50000)
-  const budgetPct  = Math.min(Math.round((monthTotal / (budget || 1)) * 100), 100)
+  const sumBudgets = budgets.length > 0 ? budgets.reduce((sum, cat) => sum + (cat.budget || 0), 0) : 0;
+  const budget = sumBudgets > 0 ? sumBudgets : (profile?.monthlyBudget ?? profile?.monthly_budget ?? 0);
+  const budgetPct  = budget > 0 ? Math.min(Math.round((monthTotal / budget) * 100), 100) : 0;
   const goalPct    = savingGoals.length > 0
-    ? Math.min(Math.round((savingGoals[0].current_amount / savingGoals[0].target_amount) * 100), 100) : 42
-  const remaining  = Math.max(budget - monthTotal, 0)
-  const isOverBudget = monthTotal > budget
+    ? Math.min(Math.round((savingGoals[0].current_amount / savingGoals[0].target_amount) * 100), 100) : 42;
+  const remaining  = budget > 0 ? Math.max(budget - monthTotal, 0) : 0;
+  const isOverBudget = budget > 0 && monthTotal > budget;
   
   const uniqueDays = Math.max(1, new Date().getDate())
   const avgSpend = Math.round(monthTotal / uniqueDays)
@@ -312,6 +313,18 @@ export default function Home() {
             </p>
           </div>
         </div>
+        
+        {budget > 0 ? (
+          <div className={styles.balanceAmts}>
+            <div><span className={styles.balLbl}>Remaining</span><br/><span className={styles.balVal}>₹{(remaining).toLocaleString('en-IN')}</span></div>
+            <div style={{textAlign:'right'}}><span className={styles.balLbl}>Used</span><br/><span className={styles.balVal}>{budgetPct}%</span></div>
+          </div>
+        ) : (
+          <div className={styles.balanceAmts}>
+            <div><span className={styles.balLbl}>Remaining</span><br/><span className={styles.balVal}>Not Set</span></div>
+            <div style={{textAlign:'right'}}><span className={styles.balLbl}>Used</span><br/><span className={styles.balVal}>N/A</span></div>
+          </div>
+        )}
       </div>
 
       {/* ── Top Focus + vs Last Month ── */}

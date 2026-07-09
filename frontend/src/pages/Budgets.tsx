@@ -363,7 +363,7 @@ export default function Budgets() {
     <div className={styles.page}>
       {/* ── Top bar ── */}
       <div className={styles.topBar}>
-        <p style={{ fontFamily: 'var(--font-headline)', fontSize: '24px', fontWeight: 'bold', color: 'var(--color-on-surface)', margin: 0 }}>Budgets & Goals</p>
+        <p style={{ fontFamily: 'var(--font-headline)', fontSize: '24px', fontWeight: 'bold', color: 'var(--color-on-surface)', margin: 0 }}>Budgets</p>
       </div>
 
       <div className={styles.px}>
@@ -517,7 +517,7 @@ export default function Budgets() {
           <div className={styles.insightIcon}>🪴</div>
           <div className={styles.insightContent}>
             <span className={styles.insightTitle}>You're doing great! 🌟</span>
-            <span className={styles.insightText}>Keep going like this and you'll smash your goals in no time.</span>
+            <span className={styles.insightText}>Keep going like this and you'll stay comfortably within budget.</span>
           </div>
           <button className={styles.insightBtn} onClick={() => navigate('/budgets/insights')}>View Insights</button>
         </div>
@@ -534,11 +534,12 @@ export default function Budgets() {
                 <span style={{ flex: 1, fontSize: '14px', color: 'var(--color-on-surface)' }}>{sub.label}</span>
                 <input
                   type="number"
-                  value={sub.budget === 0 && !sub._edited ? '' : sub.budget}
+                  value={sub.budget === 0 && !sub._edited ? '' : (sub.budget === '' ? '' : sub.budget)}
                   onChange={(e) => {
-                    const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                    const val = e.target.value === '' ? '' : (e.target.value.startsWith('0') && e.target.value.length > 1 ? parseFloat(e.target.value) : e.target.value);
                     const newData = { ...editingCatData };
-                    newData.subcategories[idx].budget = val;
+                    newData.subcategories[idx].budget = val === '' ? '' : parseFloat(val as string);
+                    if (isNaN(newData.subcategories[idx].budget)) newData.subcategories[idx].budget = '';
                     newData.subcategories[idx]._edited = true;
                     setEditingCatData(newData);
                   }}

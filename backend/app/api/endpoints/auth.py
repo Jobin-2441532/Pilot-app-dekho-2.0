@@ -99,7 +99,13 @@ def login(
 ):
     """Login with email + password, returns access and refresh tokens."""
     user = db.query(User).filter(User.email == form.username).first()
-    if not user or not verify_password(form.password, user.password_hash or ""):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account not found. The demo database resets occasionally. Please sign up again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not verify_password(form.password, user.password_hash or ""):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

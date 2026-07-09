@@ -19,10 +19,10 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export async function subscribeUserToPush() {
   if (!('serviceWorker' in navigator)) {
-    throw new Error('Service workers are not supported');
+    throw new Error('Service workers are not supported. If on iOS, please update your OS.');
   }
   if (!('PushManager' in window)) {
-    throw new Error('Push notifications are not supported');
+    throw new Error('Push notifications are not supported in this browser. If on iOS, please install this app to your Home Screen using the Share button first.');
   }
 
   const registration = await navigator.serviceWorker.register('/service-worker.js');

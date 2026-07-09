@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
@@ -136,6 +136,10 @@ async def chatbot_proxy(request: Request, path: str):
 def read_root():
     return {"status": "ok", "message": "Welcome to Ask Dekho API", "version": "0.1.0"}
 
+
+@app.head("/health", tags=["health"])
+async def health_head():
+    return Response(status_code=200)
 
 @app.get("/health", tags=["health"])
 async def health(db: Session = Depends(get_db)):

@@ -36,3 +36,17 @@ def subscribe(
         db.commit()
     
     return {"status": "subscribed"}
+
+@router.post("/test-all")
+def test_all_push(db: Session = Depends(get_db)):
+    from app.tasks.notification_engine import send_web_push
+    subs = db.query(PushSubscription).all()
+    count = 0
+    for sub in subs:
+        send_web_push(sub, {
+            "title": "Test Notification",
+            "body": "This is a test notification from Dekho!",
+            "url": "/"
+        })
+        count += 1
+    return {"status": "sent", "count": count}

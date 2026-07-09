@@ -11,7 +11,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
   const [profile, setProfile] = useState<{ name: string, email: string }>({ name: 'User', email: '' })
-  const [pushEnabled, setPushEnabled] = useState(Notification.permission === 'granted')
+  const [pushEnabled, setPushEnabled] = useState(typeof Notification !== 'undefined' && Notification.permission === 'granted')
 
   useEffect(() => {
     api.get<any>('/api/v1/dashboard/profile')

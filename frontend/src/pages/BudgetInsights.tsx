@@ -219,7 +219,7 @@ export default function BudgetInsights() {
 
   // Diverging Dot Plot Data (MoM)
   // Computed dynamically in loadData
-  const maxSpend = 10000
+  const maxSpend = Math.max(...momData.flatMap(d => [d.last, d.current]), 1) * 1.1; // 10% padding
 
   return (
     <div className={styles.container}>
