@@ -348,8 +348,13 @@ export default function Expenses() {
   const handleDelete = async (id: number | string) => {
     if (!window.confirm('Delete this transaction?')) return
     const rawId = String(id).replace(/^t/, '')
+    const userId = localStorage.getItem('dekho_user_id') || 1
     try {
-      await api.delete(`/api/v1/dashboard/transactions/${rawId}`)
+      const res = await fetch(`${API}/ml/api/transactions/${rawId}?user_id=${userId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('dekho_token')}` }
+      })
+      if (!res.ok) throw new Error("Failed to delete")
       loadData()
     } catch {
       alert('Failed to delete')
@@ -443,13 +448,13 @@ export default function Expenses() {
             </div>
           </div>
           <p className={styles.aiCardSub}>
-            Try reducing Swiggy orders by 15% to save ₹1,200 this month.
+            Try reducing {topCat.category === 'None' ? 'expenses' : topCat.category} by 15% to save ₹{Math.round((topCat.amount || 0) * 0.15).toLocaleString('en-IN')} this month.
           </p>
 
           <div className={styles.aiTarget}>
             <div className={styles.aiTargetHeader}>
               <span>TARGET SAVINGS</span>
-              <span>₹1,200</span>
+              <span>₹{Math.round((topCat.amount || 0) * 0.15).toLocaleString('en-IN')}</span>
             </div>
             <div className={styles.aiTargetTrack}>
               <div className={styles.aiTargetFill} style={{ width: '25%' }} />

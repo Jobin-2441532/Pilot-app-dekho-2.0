@@ -323,7 +323,15 @@ export default function Home() {
             <p className={styles.focusLabel}>TOP FOCUS</p>
             <div className={styles.focusVal}>
               <span className={styles.focusCat}>{topCategory.name}</span>
-              <span className={styles.focusIcon}>🍽️</span>
+              <span className={styles.focusIcon}>
+                {
+                  ({
+                    'Food & Dining': '🍴', 'Shopping': '🛍️', 'Transport': '🚗',
+                    'Entertainment': '🎬', 'Bills': '⚡', 'Health': '💊',
+                    'Housing': '🏠', 'Travel': '✈️', 'Others': '💰', 'Uncategorised': '❓'
+                  } as Record<string, string>)[topCategory.name] || '💰'
+                }
+              </span>
             </div>
           </div>
           <div className={styles.focusCard}>
