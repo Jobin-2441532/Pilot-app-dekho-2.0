@@ -25,7 +25,7 @@ export default function Home() {
   const navigate = useNavigate()
   const [loading, setLoading]       = useState(true)
   const [showWhy, setShowWhy]       = useState(false)
-  const [profile, setProfile]       = useState<any>({ name: 'User', monthly_budget: 45000 })
+  const [profile, setProfile]       = useState<any>({ name: 'User', monthly_budget: 0 })
   const [todaySpend, setTodaySpend] = useState(0)
   const [monthTotal, setMonthTotal] = useState(0)
   const [savingGoals, setSavingGoals] = useState<any[]>([])
@@ -490,7 +490,7 @@ export default function Home() {
             {[
               { label: 'Spends Logged', val: transactions.length.toString() },
               { label: 'Safe Budgets', val: `${safeBudgetsCount}/${totalBudgetsCount}` },
-              { label: 'Check-ins', val: uniqueDays.toString() },
+              { label: 'Check-ins', val: (profile?.streak_days || 0).toString() },
               { label: 'AI Chats', val: userAiChatsCount.toString() }
             ].map((stat, i) => (
               <div key={i} style={{

@@ -217,7 +217,7 @@ async def _build_user_data(user_id: int, db: Session) -> UserData:
     month_income = sum(r.amount for r in income_rows)
 
     # ── Budget — use user's actual monthly_budget, fall back to 50000 ──
-    month_budget = float(user.monthly_budget or 50000.0)
+    month_budget = float(user.monthly_budget or 0.0)
     remaining_budget = max(0.0, month_budget - month_total)
 
     # ── Streak (consecutive days with any transaction) ──

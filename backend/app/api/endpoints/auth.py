@@ -25,7 +25,7 @@ class RegisterRequest(BaseModel):
     name: str
     email: str
     password: str
-    monthly_budget: float = 50000
+    monthly_budget: float = 0
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -102,7 +102,7 @@ def login(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account not found. The demo database resets occasionally. Please sign up again.",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not verify_password(form.password, user.password_hash or ""):
