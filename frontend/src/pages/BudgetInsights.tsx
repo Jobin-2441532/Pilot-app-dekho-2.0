@@ -356,13 +356,7 @@ export default function BudgetInsights() {
         </div>
       </section>
 
-      {/* Section 4 — Insight Callout Card */}
-      <section className={styles.cardCallout}>
-        <span className={`${styles.microLabel} ${styles.calloutMicroLabel}`}>Insight</span>
-        <h2 className={`${styles.cardTitle} ${styles.calloutTitle}`}>Great potential for savings.</h2>
-        <p className={`${styles.cardSubtitle} ${styles.calloutSubtitle}`}>Since you're spending well below your pace, this is the perfect time to set a new financial goal and allocate your surplus.</p>
-        <button className={styles.calloutBtn} onClick={() => navigate('/budgets#goals')}>Set a Goal &rarr;</button>
-      </section>
+
 
 
 
