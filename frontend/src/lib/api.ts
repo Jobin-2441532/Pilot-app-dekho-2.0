@@ -46,10 +46,20 @@ async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T
 
 
 
-  const response = await fetch(url, {
-    ...fetchOptions,
-    headers,
-  })
+  // 60s timeout — Render free tier can take 30-60s on cold start
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 60000)
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   // Auto-logout on 401 (token expired / invalid)
   if (response.status === 401) {

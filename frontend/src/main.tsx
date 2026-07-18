@@ -60,6 +60,15 @@ if (savedStore) {
   }
 }
 
+/* ── Warmup ping — wake Render server before user tries to load data ── */
+if (typeof window !== 'undefined') {
+  // Fire-and-forget: ping /health immediately so Render starts warming up.
+  // By the time the user logs in and hits Home, the 30-60s cold start is done.
+  fetch('/health', { method: 'GET', cache: 'no-store' }).catch(() => {
+    // Silently ignore failures — this is just a warmup hint
+  })
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
