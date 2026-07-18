@@ -53,9 +53,18 @@ function DisclaimerWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+import { usePostHog } from 'posthog-js/react'
+
 function ScrollToTop() {
   const { pathname } = useLocation()
+  const posthog = usePostHog()
+  
   useEffect(() => {
+    // Track pageview on route change
+    if (posthog) {
+      posthog.capture('$pageview')
+    }
+
     // Scroll the main content container instead of the window
     // Use setTimeout to ensure DOM is updated after Suspense/layout resolves
     setTimeout(() => {
@@ -66,7 +75,7 @@ function ScrollToTop() {
         window.scrollTo(0, 0)
       }
     }, 50)
-  }, [pathname])
+  }, [pathname, posthog])
   return null
 }
 

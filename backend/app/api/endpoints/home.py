@@ -88,7 +88,7 @@ def get_home_reflection(
     user_data = UserData(
         name=current_user.name.split(" ")[0] if current_user.name else "there",
         days_on_app=days_on_app,
-        streak_days=current_user.current_streak_days or 0,
+        streak_days=min(current_user.current_streak_days or 0, days_on_app),
         today_spend=today_spend,
         today_top_category=top_cat,
         today_top_amount=top_cat_amount,

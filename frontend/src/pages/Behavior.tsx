@@ -7,7 +7,7 @@ import { SkeletonCard, ErrorState } from '../components/ui/LoadingState'
 import GlobalLoader from '../components/ui/GlobalLoader'
 import { api } from '../lib/api'
 import { CATEGORY_COLOR, CATEGORY_BG, getCategoryTotals, type Transaction } from '../data/mockData'
-import { getCategoryEmoji } from '../utils/categoryUtils'
+import { useCategoryEmoji } from '../utils/categoryUtils'
 
 // Weekly day labels
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -42,6 +42,7 @@ const PATTERNS = [
 export default function Behavior() {
   const [period, setPeriod] = useState<'current' | 'prev'>('current')
   
+  const getCategoryEmoji = useCategoryEmoji()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

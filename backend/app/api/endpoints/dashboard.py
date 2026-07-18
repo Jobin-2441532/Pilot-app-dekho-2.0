@@ -33,7 +33,7 @@ def get_transactions(
     if direction:
         q = q.filter(Transaction.direction == direction)
 
-    rows = q.order_by(Transaction.date.desc()).offset(skip).limit(limit).all()
+    rows = q.order_by(Transaction.date.desc(), Transaction.created_at.desc()).offset(skip).limit(limit).all()
 
     return {
         "data": [
@@ -49,6 +49,7 @@ def get_transactions(
                 "payment_mode": row.payment_mode,
                 "notes": row.notes,
                 "tags": row.tags,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
             }
             for row in rows
         ]

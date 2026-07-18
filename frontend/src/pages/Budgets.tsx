@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Bell, Plus, Edit2, Trash2, Wallet, Shield, Percent, Home, ShoppingBag, Target, PiggyBank, Settings2, Activity, ChevronDown, TrendingUp, X } from 'lucide-react'
-import { getCategoryEmoji } from '../utils/categoryUtils'
+import { useCategoryEmoji } from '../utils/categoryUtils'
 import { useAppStore } from '../store/appStore'
 import { SkeletonCard } from '../components/ui/LoadingState'
 import GlobalLoader from '../components/ui/GlobalLoader'
@@ -121,6 +121,7 @@ const PulseIllustration = ({ mood }: { mood: string }) => {
 export default function Budgets() {
   const navigate = useNavigate()
   const { toggleChat } = useAppStore()
+  const getCategoryEmoji = useCategoryEmoji()
   const [loading, setLoading] = useState(true)
   const [goals, setGoals] = useState<any[]>([])
   const [transactions, setTransactions] = useState<any[]>([])
@@ -135,6 +136,7 @@ export default function Budgets() {
   const [newCatEmoji, setNewCatEmoji] = useState('📌')
   const [newCatBudget, setNewCatBudget] = useState('')
   const [isAddingGoal, setIsAddingGoal] = useState(false)
+  const [showBudgetNudge, setShowBudgetNudge] = useState(false)
   const [goalName, setGoalName] = useState('')
   const [goalTarget, setGoalTarget] = useState('')
   const [goalDeadline, setGoalDeadline] = useState('')
@@ -219,7 +221,7 @@ export default function Budgets() {
   }
   const pulseMood = getPulseMood()
   const PULSE_HEADLINES: Record<string, string> = {
-    cruising:   'Cruising smoothly this month.',
+    cruising:   totalBudget > 0 ? 'Cruising smoothly this month.' : 'Budgeting starts with a goal.',
     on_track:   'Pacing well. Right where you should be.',
     mindful:    'Getting into the second half. Stay mindful.',
     tight:      'The month is tightening up a little.',
@@ -227,7 +229,7 @@ export default function Budgets() {
     underspent: "You're running very lean this month."
   }
   const PULSE_SUBS: Record<string, string> = {
-    cruising:   `₹${buffer.toLocaleString('en-IN')} remaining — you're well in control.`,
+    cruising:   totalBudget > 0 ? `₹${buffer.toLocaleString('en-IN')} remaining — you're well in control.` : 'Set a budget to start receiving AI-driven financial insights.',
     on_track:   'Spending is matching the calendar. Keep the rhythm.',
     mindful:    `₹${buffer.toLocaleString('en-IN')} left for the rest of the month. Conscious choices from here.`,
     tight:      `₹${buffer.toLocaleString('en-IN')} to work with. Small decisions matter now.`,
@@ -316,6 +318,16 @@ export default function Budgets() {
           cat.budget = cat.subcategories ? cat.subcategories.reduce((s:number, sub:any)=> s + (sub.budget||0), 0) : 0;
         });
         setCategoriesData(bRes)
+        
+        const customEmojis: Record<string, string> = {};
+        bRes.forEach(cat => {
+          if (Array.isArray(cat.subcategories)) {
+            cat.subcategories.forEach((sub: any) => {
+              if (sub.label && sub.emoji) customEmojis[sub.label] = sub.emoji;
+            });
+          }
+        });
+        useAppStore.getState().setCategoryEmojis(customEmojis);
       }
 
       const txList = txRes?.data || []
@@ -385,20 +397,20 @@ export default function Budgets() {
             </div>
             <div className={`${styles.pulseAmountCol} ${styles.right}`}>
               <span className={styles.pulseAmountLabel}>Budget</span>
-              <span className={styles.pulseAmountVal}>{fmt(totalBudget)}</span>
+              <span className={styles.pulseAmountVal}>{totalBudget > 0 ? fmt(totalBudget) : 'Not Set'}</span>
             </div>
           </div>
           <div className={styles.pulseBar}>
-            <div className={styles.pulseBarFill} style={{ width: `${overallPct}%` }}>
-              <div className={styles.pulseBarDot} />
+            <div className={styles.pulseBarFill} style={{ width: totalBudget > 0 ? `${overallPct}%` : '0%' }}>
+              {totalBudget > 0 && <div className={styles.pulseBarDot} />}
             </div>
           </div>
           <div className={styles.pulseSafeRow}>
             <div className={styles.pulseSafe}>
-              Safe to spend: {fmt(buffer)}
+              {totalBudget > 0 ? `Safe to spend: ${fmt(buffer)}` : 'Safe to spend: N/A'}
             </div>
             <div className={styles.pulseUsedPct}>
-              {overallPct}% used
+              {totalBudget > 0 ? `${overallPct}% used` : 'Budget Not Set'}
             </div>
           </div>
         </div>
@@ -540,9 +552,62 @@ export default function Budgets() {
             <span className={styles.insightTitle}>You're doing great! 🌟</span>
             <span className={styles.insightText}>Keep going like this and you'll stay comfortably within budget.</span>
           </div>
-          <button className={styles.insightBtn} onClick={() => navigate('/budgets/insights')}>View Insights</button>
+          <button className={styles.insightBtn} onClick={() => {
+            if (totalBudget === 0) {
+              setShowBudgetNudge(true);
+            } else {
+              navigate('/budgets/insights');
+            }
+          }}>View Insights</button>
         </div>
       </div>
+
+      {/* Budget Motivation Modal */}
+      {showBudgetNudge && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }} onClick={() => setShowBudgetNudge(false)}>
+          <div style={{ background: 'var(--bg-surface)', padding: '32px 24px', borderRadius: '24px', width: '100%', maxWidth: '340px', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎯</div>
+            <h3 style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: 'var(--color-on-surface)' }}>Set Your Intention</h3>
+            <p style={{ margin: 0, fontSize: '15px', color: 'var(--color-muted)', lineHeight: 1.5 }}>
+              Insights are only meaningful when they guide you toward a goal. Setting a budget isn't about restricting yourself — it's about telling your money where to go.
+            </p>
+            <div style={{ height: '8px' }} />
+            <button 
+              style={{
+                background: 'var(--color-primary)',
+                color: 'black',
+                border: 'none',
+                padding: '16px 24px',
+                borderRadius: '16px',
+                fontSize: '16px',
+                fontWeight: 600,
+                width: '100%',
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                setShowBudgetNudge(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              Set My Budget Now
+            </button>
+            <button 
+              style={{
+                background: 'transparent',
+                color: 'var(--color-muted)',
+                border: 'none',
+                padding: '8px',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer'
+              }}
+              onClick={() => setShowBudgetNudge(false)}
+            >
+              Maybe Later
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Budget Modal */}
       {editingCatData && (

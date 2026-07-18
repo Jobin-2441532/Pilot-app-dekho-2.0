@@ -8,7 +8,7 @@ import { SkeletonCard } from '../components/ui/LoadingState'
 import GlobalLoader from '../components/ui/GlobalLoader'
 import api from '../lib/api'
 import styles from './Expenses.module.css'
-import { getCategoryEmoji, normalizeCategory } from '../utils/categoryUtils'
+import { useCategoryEmoji, normalizeCategory } from '../utils/categoryUtils'
 
 type InsightTab = 'Total' | 'By Category' | 'Ad hoc Period' | 'None'
 
@@ -105,8 +105,14 @@ function CategoryBar({ label, amount, total, emoji }: { label: string; amount: n
   )
 }
 
+import { useInsights } from '../hooks/useInsights'
+import EditTransactionModal from '../components/transactions/EditTransactionModal'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Check } from 'lucide-react'
 export default function Expenses() {
   const navigate = useNavigate()
+  const { insights } = useInsights()
+  const getCategoryEmoji = useCategoryEmoji()
   const [loading, setLoading] = useState(true)
   const [insightTab, setInsightTab] = useState<InsightTab>('Total')
   const [listFilter, setListFilter] = useState<'Month' | 'By Category'>('Month')
@@ -133,6 +139,7 @@ export default function Expenses() {
   const [editTx, setEditTx] = useState<any>(null)
   const [newCat, setNewCat] = useState("")
   const [isReimbursement, setIsReimbursement] = useState(false)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   // Dynamic heatmap data
   const [heatmapData, setHeatmapData] = useState<HeatmapCell[][]>([])
@@ -157,7 +164,12 @@ export default function Expenses() {
   }
 
   // Initial load
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { 
+    loadData() 
+    const handleUpdate = () => loadData()
+    window.addEventListener('dekho_data_updated', handleUpdate)
+    return () => window.removeEventListener('dekho_data_updated', handleUpdate)
+  }, [])
 
   // ── Derived: all debit transactions for the selected month ─────────────────
   const transactions = allTransactions.filter(tx => {
@@ -170,6 +182,14 @@ export default function Expenses() {
 
   if (listFilter === 'Month') {
     displayTransactions = displayTransactions.filter(tx => String(tx.date || '').startsWith(selectedMonth));
+    displayTransactions.sort((a, b) => {
+      const dateA = new Date(a.date).getTime()
+      const dateB = new Date(b.date).getTime()
+      if (dateA !== dateB) return dateB - dateA
+      const createA = new Date(a.created_at || a.date).getTime()
+      const createB = new Date(b.created_at || b.date).getTime()
+      return createB - createA
+    });
   } else if (listFilter === 'By Category') {
     displayTransactions = displayTransactions.filter(tx => String(tx.date || '').startsWith(selectedMonth));
     displayTransactions.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
@@ -345,7 +365,9 @@ export default function Expenses() {
     const rawId = String(id).replace(/^t/, '')
     try {
       await api.delete(`/api/v1/dashboard/transactions/${rawId}`)
-      loadData()
+      window.dispatchEvent(new Event('dekho_data_updated'))
+      setDeleteSuccess(true)
+      setTimeout(() => setDeleteSuccess(false), 2000)
     } catch {
       alert('Failed to delete')
     }
@@ -427,29 +449,46 @@ export default function Expenses() {
       {/* ── AI Insight card ── */}
       <div className={styles.px}>
         <div className={styles.aiCard}>
-          <div className={styles.aiWatermark}>{getCategoryEmoji(topCat.category)}</div>
+          <div className={styles.aiWatermark}>{getCategoryEmoji(insights?.expenses?.hero_insight?.category_icon || topCat.category)}</div>
           <p className={styles.aiCardLabel}>INSIGHT</p>
           <div className={styles.aiCardContent}>
             <p className={styles.aiCardTitle}>
-              {topCat.category} is your highest expense (₹{(topCat.amount || 0).toLocaleString('en-IN')})
+              {insights?.expenses?.hero_insight?.headline || `${topCat.category} is your highest expense (₹${(topCat.amount || 0).toLocaleString('en-IN')})`}
             </p>
-            <div className={styles.aiCardBadgeWrap}>
-              <span className={styles.aiCardBadge}>+{topCatPct}%</span>
-            </div>
+            {insights?.expenses?.hero_insight?.tag ? (
+              <div className={styles.aiCardBadgeWrap}>
+                <span className={styles.aiCardBadge}>{insights.expenses.hero_insight.tag}</span>
+              </div>
+            ) : topCatPct > 0 ? (
+              <div className={styles.aiCardBadgeWrap}>
+                <span className={styles.aiCardBadge}>+{topCatPct}%</span>
+              </div>
+            ) : null}
           </div>
+          
           <p className={styles.aiCardSub}>
-            Try reducing {topCat.category === 'None' ? 'expenses' : topCat.category} by 15% to save ₹{Math.round((topCat.amount || 0) * 0.15).toLocaleString('en-IN')} this month.
+            {insights?.expenses?.hero_insight?.lines ? (
+              <>
+                {insights.expenses.hero_insight.lines.map((l: string, i: number) => (
+                  <span key={i} style={{ display: 'block', marginBottom: i === 0 ? 4 : 0 }}>{l}</span>
+                ))}
+              </>
+            ) : (
+              `Try reducing ${topCat.category === 'None' ? 'expenses' : topCat.category} to save money this month.`
+            )}
           </p>
 
-          <div className={styles.aiTarget}>
-            <div className={styles.aiTargetHeader}>
-              <span>TARGET SAVINGS</span>
-              <span>₹{Math.round((topCat.amount || 0) * 0.15).toLocaleString('en-IN')}</span>
+          {insights?.expenses?.hero_insight?.saving_hint && (
+            <div className={styles.aiTarget}>
+              <div className={styles.aiTargetHeader}>
+                <span>TARGET SAVINGS</span>
+                <span>{insights.expenses.hero_insight.saving_hint}</span>
+              </div>
+              <div className={styles.aiTargetTrack}>
+                <div className={styles.aiTargetFill} style={{ width: '25%' }} />
+              </div>
             </div>
-            <div className={styles.aiTargetTrack}>
-              <div className={styles.aiTargetFill} style={{ width: '25%' }} />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -638,55 +677,49 @@ export default function Expenses() {
 
       {/* Edit Modal */}
       {editTx && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '20px'
-        }} onClick={() => setEditTx(null)}>
-          <div style={{
-            background: 'var(--bg-surface)', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '400px',
-            display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative'
-          }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setEditTx(null)} style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer' }}>
-              <X size={20} color="var(--color-muted)" />
-            </button>
-            <h3 style={{ margin: 0, fontFamily: 'var(--font-headline)', color: 'var(--color-on-surface)' }}>Edit Category</h3>
-            
-            <div style={{ color: 'var(--color-muted)', fontSize: '14px', fontFamily: 'var(--font-body)' }}>
-              <div style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{editTx.merchant}</div>
-              ₹{(editTx.amount || 0).toLocaleString('en-IN')} • Current: {editTx.category}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-muted)', textTransform: 'uppercase' }}>New Category</label>
-              <select 
-                value={newCat} 
-                onChange={e => setNewCat(e.target.value)}
-                style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--color-outline)', background: 'var(--bg-surface)', color: 'var(--color-on-surface)' }}
-              >
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-
-            {editTx.type === "credit" && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" id="reimb" checked={isReimbursement} onChange={e => setIsReimbursement(e.target.checked)} />
-                <label htmlFor="reimb" style={{ fontSize: '14px', color: 'var(--color-on-surface)', cursor: 'pointer' }}>Reimbursement for earlier spending</label>
-              </div>
-            )}
-
-            <button 
-              onClick={handleCorrect}
-              style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
-            >
-              Save & Learn
-            </button>
-            <div style={{ fontSize: '11px', color: 'var(--color-muted)', textAlign: 'center' }}>
-              💡 This will teach the AI to auto-categorise this merchant in future.
-            </div>
-          </div>
-        </div>
+        <EditTransactionModal 
+          tx={editTx} 
+          onClose={() => {
+            setEditTx(null);
+            loadData();
+          }} 
+        />
       )}
+
+      {/* Delete Success Modal */}
+      <AnimatePresence>
+        {deleteSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              style={{
+                background: 'var(--bg-surface)', padding: '32px', borderRadius: '24px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px'
+              }}
+            >
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '32px', background: 'var(--color-primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Check size={32} color="white" />
+              </div>
+              <p style={{ margin: 0, fontFamily: 'var(--font-headline)', fontWeight: 'bold', fontSize: '18px', color: 'var(--color-on-surface)' }}>
+                Transaction Deleted
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

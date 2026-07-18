@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Settings, Check } from 'lucide-react'
 import { SkeletonCard } from '../components/ui/LoadingState'
-import { getCategoryEmoji } from '../utils/categoryUtils'
+import { useCategoryEmoji } from '../utils/categoryUtils'
 import { useInsights } from '../hooks/useInsights'
+import { useAppStore } from '../store/appStore'
 import api from '../lib/api'
 import { ReflectionCard } from '../components/ui/ReflectionCard'
 import GlobalLoader from '../components/ui/GlobalLoader'
@@ -42,6 +43,7 @@ export default function Home() {
   const [ingestStatus, setIngestStatus] = useState<{type: 'success' | 'error', msg: string} | null>(null)
 
   const { insights } = useInsights()
+  const getCategoryEmoji = useCategoryEmoji()
 
   const [chatOpen, setChatOpen] = useState(false)
   const [chatHistory, setChatHistory] = useState<{role: 'user'|'dekho', text: string}[]>([])
@@ -92,7 +94,37 @@ export default function Home() {
       if (prof) setProfile({ ...prof, name: prof.fullName || prof.name || 'User' })
       if (Array.isArray(goals)) setSavingGoals(goals)
       if (Array.isArray(revData)) setReviewCount(revData.length)
-      if (Array.isArray(budgetsRes)) setBudgets(budgetsRes)
+      if (Array.isArray(budgetsRes)) {
+        const legacyBudgets: Record<string, number> = {
+          'Housing & Household': 12000, 'Utilities': 2000, 'Bills': 1500,
+          'Food & Dining': 6000, 'Groceries': 2000, 'Transport': 1500,
+          'Shopping': 4000, 'Entertainment': 2000, 'Travel': 3000,
+          'Subscriptions': 500, 'Telecom': 500, 'Investment': 5000,
+          'Others': 2000, 'Services': 2000, 'Uncategorised': 1000
+        };
+
+        budgetsRes.forEach(cat => {
+          if (Array.isArray(cat.subcategories)) {
+            cat.subcategories.forEach((sub: any) => {
+              if (legacyBudgets[sub.label] && sub.budget === legacyBudgets[sub.label]) {
+                sub.budget = 0;
+              }
+            });
+          }
+          cat.budget = cat.subcategories ? cat.subcategories.reduce((s:number, sub:any)=> s + (sub.budget||0), 0) : 0;
+        });
+
+        setBudgets(budgetsRes)
+        const customEmojis: Record<string, string> = {};
+        budgetsRes.forEach(cat => {
+          if (Array.isArray(cat.subcategories)) {
+            cat.subcategories.forEach((sub: any) => {
+              if (sub.label && sub.emoji) customEmojis[sub.label] = sub.emoji;
+            });
+          }
+        });
+        useAppStore.getState().setCategoryEmojis(customEmojis);
+      }
       if (Array.isArray(chatHistRes)) {
         const userMsgs = chatHistRes.filter((m: any) => m.role === 'user').length;
         setTotalAiChats(userMsgs);
@@ -102,7 +134,8 @@ export default function Home() {
       if (Array.isArray(txList)) {
         setTransactions(txList)
         
-        const thisMonthTxs = txList.filter(t => (t.date || '') >= monthStart)
+        const currentMonthPrefix = monthStart.slice(0, 7)
+        const thisMonthTxs = txList.filter(t => (t.date || '').startsWith(currentMonthPrefix))
         const total = thisMonthTxs.reduce((s: number, t: any) => s + (t.direction === 'debit' ? (t.amount ?? 0) : 0), 0)
         setMonthTotal(total)
 
@@ -140,9 +173,13 @@ export default function Home() {
         // Top category this month
         const catMap: Record<string, number> = {}
         txList.forEach((t: any) => {
-          if (t.direction === 'debit' && t.date >= monthStart) {
-            const c = t.category || 'Others'
-            catMap[c] = (catMap[c] || 0) + (t.amount || 0)
+          if (t.direction === 'debit' && t.date) {
+            const txMonth = t.date.slice(0, 7)
+            const currentMonth = monthStart.slice(0, 7)
+            if (txMonth === currentMonth) {
+              const c = t.category || 'Others'
+              catMap[c] = (catMap[c] || 0) + (t.amount || 0)
+            }
           }
         })
         setCategorySpends(catMap)
@@ -209,7 +246,7 @@ export default function Home() {
   if (loading && transactions.length === 0) return <GlobalLoader />
 
   const sumBudgets = budgets.length > 0 ? budgets.reduce((sum, cat) => sum + (cat.budget || 0), 0) : 0;
-  const budget = sumBudgets > 0 ? sumBudgets : (profile?.monthlyBudget ?? profile?.monthly_budget ?? 0);
+  const budget = sumBudgets;
   const budgetPct  = budget > 0 ? Math.min(Math.round((monthTotal / budget) * 100), 100) : 0;
   const goalPct    = savingGoals.length > 0
     ? Math.min(Math.round((savingGoals[0].current_amount / savingGoals[0].target_amount) * 100), 100) : 42;
@@ -364,14 +401,15 @@ export default function Home() {
         <div className={styles.progressCard}>
           <div className={styles.progressRow}>
             <p className={styles.progressLabel}>MONTHLY BUDGET</p>
-            <p className={styles.progressPct}>{budgetPct}%</p>
+            <p className={styles.progressPct}>{budget === 0 ? 'Not Set' : `${budgetPct}%`}</p>
           </div>
           <div className={styles.track}>
             <div
               className={styles.fill}
               style={{
-                width: `${budgetPct}%`,
-                background: isOverBudget ? 'var(--color-negative, #e53935)'
+                width: budget === 0 ? '100%' : `${budgetPct}%`,
+                background: budget === 0 ? 'var(--bg-card)' 
+                          : isOverBudget ? 'var(--color-negative, #e53935)'
                           : budgetPct > 70  ? '#f59e0b'
                           : 'var(--color-primary)',
               }}
@@ -486,21 +524,19 @@ export default function Home() {
           
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(2, 1fr)',
             width: '100%',
             gap: '8px'
           }}>
             {[
               { label: 'Spends Logged', val: transactions.length.toString() },
-              { label: 'Safe Budgets', val: `${safeBudgetsCount}/${totalBudgetsCount}` },
-              { label: 'Check-ins', val: (profile?.streak_days || 0).toString() },
-              { label: 'AI Chats', val: userAiChatsCount.toString() }
+              { label: 'Safe Budgets', val: `${safeBudgetsCount}/${totalBudgetsCount}` }
             ].map((stat, i) => (
               <div key={i} style={{
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                borderRight: i === 3 ? 'none' : '1px solid var(--color-border, #EAEAEA)',
+                borderRight: i === 1 ? 'none' : '1px solid var(--color-border, #EAEAEA)',
               }}>
                 <div style={{ fontSize: '11px', color: 'var(--color-muted)', fontWeight: 600, marginBottom: '4px', textAlign: 'center', lineHeight: 1.2 }}>
                   {stat.label.split(' ')[0]}<br/>{stat.label.split(' ')[1] || ''}

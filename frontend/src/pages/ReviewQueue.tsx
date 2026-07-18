@@ -10,10 +10,11 @@ const CATEGORIES = [
   "Loan EMI", "Credit Card", "Income", "Refund", "Cash Withdrawal",
   "Services", "Uncategorised",
 ];
-import { getCategoryEmoji } from '../utils/categoryUtils'
+import { useCategoryEmoji } from '../utils/categoryUtils'
 
 export default function ReviewQueue() {
   const navigate = useNavigate()
+  const getCategoryEmoji = useCategoryEmoji()
   const [txs, setTxs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selections, setSelections] = useState<Record<number, string>>({})

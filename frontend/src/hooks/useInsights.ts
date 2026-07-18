@@ -16,7 +16,7 @@ export interface InsightsData {
     savings_nudge?: { headline: string; subtext: string } | null
   }
   expenses: {
-    hero_insight:        { headline: string; tag?: string; lines: string[]; saving_hint?: string }
+    hero_insight:        { headline: string; tag?: string; lines: string[]; saving_hint?: string; category_icon?: string }
     pattern_caption:     string
     subscription_audit?: { headline: string; subtext: string; cta: string } | null
   }

@@ -10,10 +10,11 @@ import { SkeletonCard, ErrorState } from '../components/ui/LoadingState'
 import GlobalLoader from '../components/ui/GlobalLoader'
 import { api } from '../lib/api'
 import { BUDGETS, CATEGORY_BG, CATEGORY_COLOR, type SavingsGoal } from '../data/mockData'
-import { getCategoryEmoji } from '../utils/categoryUtils'
+import { useCategoryEmoji } from '../utils/categoryUtils'
 import { Plus, X } from 'lucide-react'
 
 export default function Goals() {
+  const getCategoryEmoji = useCategoryEmoji()
   const [showForm, setShowForm] = useState(false)
   const [goalName, setGoalName] = useState('')
   const [goalTarget, setGoalTarget] = useState('')

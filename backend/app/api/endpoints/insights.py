@@ -83,6 +83,7 @@ async def _build_user_data(user_id: int, db: Session) -> UserData:
 
     # ── Time / date context ──
     now = datetime.now()
+    days_on_app = max((now.date() - user.created_at.date()).days, 1) if user.created_at else 1
     today_str = date.today().isoformat()
     current_hour = now.hour
 
@@ -220,24 +221,30 @@ async def _build_user_data(user_id: int, db: Session) -> UserData:
     month_budget = float(user.monthly_budget or 0.0)
     remaining_budget = max(0.0, month_budget - month_total)
 
-    # ── Streak (consecutive days with any transaction) ──
-    all_dates = sorted(set(
-        r.date for r in db.query(Transaction)
-        .filter(Transaction.user_id == user_id)
-        .all()
-    ), reverse=True)
-    streak_days = 0
-    check = date.today()
-    for d_str in all_dates:
-        try:
-            d_obj = date.fromisoformat(d_str[:10])
-        except Exception:
-            continue
-        if d_obj == check:
-            streak_days += 1
-            check = check - timedelta(days=1)
-        elif d_obj < check:
-            break
+    # ── Streak (Calculate dynamically from transaction dates) ──
+    tx_dates = db.query(Transaction.date).filter(
+        Transaction.user_id == user_id
+    ).distinct().order_by(Transaction.date.desc()).all()
+    
+    unique_dates = sorted(set([d[0] for d in tx_dates if d[0]]), reverse=True)
+    
+    current_streak = 0
+    today_str = now.date().isoformat()
+    yesterday_str = (now.date() - timedelta(days=1)).isoformat()
+    
+    if unique_dates and (unique_dates[0] == today_str or unique_dates[0] == yesterday_str):
+        expected_date = date.fromisoformat(unique_dates[0])
+        for d_str in unique_dates:
+            if d_str == expected_date.isoformat():
+                current_streak += 1
+                expected_date = expected_date - timedelta(days=1)
+            else:
+                break
+    
+    # Save the computed streak to user (optional, but good for profile API)
+    user.current_streak_days = current_streak
+    
+    streak_days = min(current_streak, days_on_app)
 
     # ── Subscriptions ──
     sub_rows = db.query(Transaction).filter(
@@ -267,7 +274,7 @@ async def _build_user_data(user_id: int, db: Session) -> UserData:
     emotional_trigger = _safe_emotion(ml_data.get("emotional_trigger", "none"))
 
     return UserData(
-        name=getattr(user, "name", None) or "there",
+        name=user.name.split(" ")[0] if user.name else "there",
         days_on_app=days_on_app,
         stage=stage,
         time_of_day=time_of_day,

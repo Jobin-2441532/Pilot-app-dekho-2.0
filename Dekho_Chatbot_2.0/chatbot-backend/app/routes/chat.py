@@ -442,3 +442,41 @@ async def _update_prefs_from_feedback(user_id: str, rating: str, intent: str | N
 async def get_preferences(user_id: str):
     """Return current learned preferences for a user."""
     return await db_store.get_user_preferences(user_id)
+
+
+# ── Session Management Endpoints ───────────────────────────────────────────────
+
+@router.get("/sessions")
+async def list_sessions(jwt_user: str | None = Depends(get_current_user) if settings.auth_enabled else None) -> list[dict]:
+    """Get all chat sessions for the user."""
+    user_id = _resolve_user_id(jwt_user, "user_1")
+    return await db_store.get_chat_sessions(user_id)
+
+@router.get("/sessions/{session_id}")
+async def get_session(session_id: str, jwt_user: str | None = Depends(get_current_user) if settings.auth_enabled else None) -> list[dict]:
+    """Get all messages for a specific session."""
+    user_id = _resolve_user_id(jwt_user, "user_1")
+    return await db_store.get_session_messages(user_id, session_id)
+
+class RenameSessionRequest(BaseModel):
+    title: str
+
+@router.put("/sessions/{session_id}")
+async def rename_session(session_id: str, req: RenameSessionRequest, jwt_user: str | None = Depends(get_current_user) if settings.auth_enabled else None):
+    """Rename a session."""
+    user_id = _resolve_user_id(jwt_user, "user_1")
+    success = await db_store.rename_session(user_id, session_id, req.title)
+    if not success:
+        raise HTTPException(404, "Session not found")
+    return {"success": True}
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str, jwt_user: str | None = Depends(get_current_user) if settings.auth_enabled else None):
+    """Delete a session."""
+    user_id = _resolve_user_id(jwt_user, "user_1")
+    success = await db_store.delete_session(user_id, session_id)
+    if not success:
+        raise HTTPException(404, "Session not found")
+    from app.services.memory_store import clear_session
+    await clear_session(session_id)
+    return {"success": True}

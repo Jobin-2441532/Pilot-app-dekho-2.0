@@ -618,12 +618,10 @@ def expenses_hero_insight(d: UserData) -> dict:
         headline = f"{cat} is your highest expense ({fmt(amt)})"
         tag = fmt_pct(chg)
         lines = pick(key, [
-            [f"That's {fmt_pct(chg)} more than last month — a significant jump. "
-             f"Cutting {vendor_for(cat)} orders by 15% could free up {fmt(amt * 0.15)}.",
-             f"If this pace continues, {cat.lower()} will cost {fmt(amt * 1.15)} next month."],
-            [f"{cat} jumped {fmt_pct(chg)} from last month. "
-             f"Even small cuts — skipping 2–3 orders — make a visible difference.",
-             f"Your second-highest is {cat2} at {fmt(amt2)}. Together they're {fmt(amt + amt2)} — worth a look."],
+            [f"That's {fmt_pct(chg)} more than last month — a significant jump. ",
+             f"Taking a 48-hour pause on {vendor_for(cat)} can help reset this trend before it becomes a habit."],
+            [f"{cat} jumped {fmt_pct(chg)} from last month. ",
+             f"Your second-highest is {cat2} at {fmt(amt2)}. Awareness is the first step to shifting your spending rhythm."],
         ])
         saving_hint = fmt(amt * 0.15)
 
@@ -1287,7 +1285,7 @@ def ask_dekho(question: str, d: UserData) -> str:
     if any(x in q for x in ["can i save", "how much can i save", "saving potential"]):
         potential = d.remaining_budget * 0.3
         return (f"Based on your current pace, you could realistically save {fmt(potential)} more this month "
-                f"by reducing {d.month_top_category.lower()} spend by 10–15%. "
+                f"by being slightly more mindful of your {d.month_top_category.lower()} spending. "
                 f"Your saving target is {int(d.saving_target_pct)}% complete.")
 
     if any(x in q for x in ["why did i spend", "what happened", "comfort spend"]):

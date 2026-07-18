@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, Sparkles, Trash2 } from 'lucide-react'
+import { X, Send, Sparkles, Trash2, Menu } from 'lucide-react'
 import { useAppStore } from '../../store/appStore'
 import { api } from '../../lib/api'
 import ChatBubble from './ChatBubble'
+import ChatHistorySidebar from './ChatHistorySidebar'
 import styles from './ChatPanel.module.css'
 
 interface Message {
@@ -46,6 +47,16 @@ export default function ChatPanel() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const generateId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+  }
+
+  const [sessionId, setSessionId] = useState<string>(() => generateId())
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
   // Phase 6: Load chat history from DB when panel opens
   useEffect(() => {
     if (!isChatOpen) return
@@ -67,21 +78,64 @@ export default function ChatPanel() {
       .catch(() => setUserGoals([]))
 
     // Fetch persisted session history
-    api.get<any[]>('/api/v1/chat/history')
-      .then(rows => {
+    const loadCurrentSession = async () => {
+      try {
+        const rows = await api.get<any[]>(`/api/chat/sessions/${sessionId}`)
         if (rows.length === 0) {
           setMessages([WELCOME])
         } else {
           setMessages(rows.map(r => ({
             role: r.role as 'user' | 'assistant',
             content: r.content,
-            id: r.id,
+            id: r.id || generateId(),
             timestamp: r.timestamp,
           })))
         }
-      })
-      .catch(() => setMessages([WELCOME]))
+      } catch {
+        setMessages([WELCOME])
+      }
+    }
+    
+    // We only load if it's an existing session. If it's a brand new one (messages.length === 1), we don't need to fetch.
+    if (messages.length === 1 && messages[0].id === 'welcome') {
+      // Try to load the latest session if possible
+      api.get<any[]>('/api/chat/sessions').then(sessions => {
+        if (sessions.length > 0) {
+          handleSelectSession(sessions[0].session_id)
+        }
+      }).catch(() => {})
+    } else {
+      loadCurrentSession()
+    }
   }, [isChatOpen])
+
+  const handleSelectSession = async (newSessionId: string) => {
+    setSessionId(newSessionId)
+    setIsLoading(true)
+    try {
+      const rows = await api.get<any[]>(`/api/chat/sessions/${newSessionId}`)
+      if (rows.length === 0) {
+        setMessages([WELCOME])
+      } else {
+        setMessages(rows.map(r => ({
+          role: r.role as 'user' | 'assistant',
+          content: r.content,
+          id: r.id || generateId(),
+          timestamp: r.timestamp,
+        })))
+      }
+    } catch {
+      setMessages([WELCOME])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleNewChat = () => {
+    setSessionId(generateId())
+    setMessages([WELCOME])
+    setDisambiguation(null)
+  }
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -188,12 +242,6 @@ export default function ChatPanel() {
     return { action: null, goalName: '', amount: 0, isAmbiguous: false }
   }
 
-  const generateId = () => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    return Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-  }
 
   const sendMessage = async () => {
     const text = input.trim()
@@ -245,7 +293,7 @@ export default function ChatPanel() {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         // We pass empty user_id if token is used, or a dummy if testing
-        body: JSON.stringify({ user_id: 'user_1', message: text }),
+        body: JSON.stringify({ user_id: 'user_1', message: text, session_id: sessionId }),
       })
 
       if (!res.ok) {
@@ -389,12 +437,11 @@ export default function ChatPanel() {
   // Phase 6: Clear session memory and reset to welcome state
   const clearHistory = async () => {
     try {
-      await api.delete<any>('/api/v1/chat/history')
+      await api.delete<any>(`/api/chat/sessions/${sessionId}`)
     } catch {
       // Non-fatal — reset UI regardless
     }
-    setMessages([WELCOME])
-    setDisambiguation(null)
+    handleNewChat()
   }
 
   // Phase 4: Called when user picks a specific goal from the disambiguation picker
@@ -467,9 +514,25 @@ export default function ChatPanel() {
             aria-label="Ask Dekho chatbot"
             aria-modal="true"
           >
+            <ChatHistorySidebar 
+              isOpen={isSidebarOpen} 
+              onClose={() => setIsSidebarOpen(false)}
+              onSelectSession={handleSelectSession}
+              onNewChat={handleNewChat}
+              currentSessionId={sessionId}
+            />
+
             {/* Header */}
             <div className={styles.header}>
               <div className={styles.headerLeft}>
+                <button 
+                  className={styles.closeBtn} 
+                  onClick={() => setIsSidebarOpen(true)}
+                  aria-label="Menu"
+                  style={{ marginRight: '0.5rem' }}
+                >
+                  <Menu size={18} strokeWidth={2} />
+                </button>
                 <div className={styles.avatar}>
                   <Sparkles size={16} strokeWidth={2} />
                 </div>

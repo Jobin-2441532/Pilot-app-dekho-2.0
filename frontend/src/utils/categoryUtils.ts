@@ -38,7 +38,19 @@ export const normalizeCategory = (category: string): string => {
   return category;
 };
 
+import { useAppStore } from '../store/appStore';
+
 export const getCategoryEmoji = (category: string): string => {
   const normalized = normalizeCategory(category);
-  return CATEGORY_EMOJIS[normalized] || '📦';
+  const customEmojis = useAppStore.getState().categoryEmojis || {};
+  return customEmojis[normalized] || customEmojis[category] || CATEGORY_EMOJIS[normalized] || '📦';
+};
+
+export const useCategoryEmoji = () => {
+  const customEmojis = useAppStore(state => state.categoryEmojis) || {};
+  
+  return (category: string): string => {
+    const normalized = normalizeCategory(category);
+    return customEmojis[normalized] || customEmojis[category] || CATEGORY_EMOJIS[normalized] || '📦';
+  };
 };

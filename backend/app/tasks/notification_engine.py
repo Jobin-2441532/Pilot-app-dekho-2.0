@@ -1,6 +1,7 @@
 import os
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User
@@ -37,10 +38,10 @@ def send_web_push(subscription: PushSubscription, payload: dict):
 
 def dispatch_notification(db: Session, user: User, rule_type: str, title: str, message: str):
     # Check limit of 3 per day
-    today = date.today()
+    today_start = datetime.combine(date.today(), datetime.min.time())
     count_today = db.query(Notification).filter(
         Notification.user_id == user.id,
-        Notification.created_at >= today
+        Notification.created_at >= today_start
     ).count()
 
     if count_today >= 3:
@@ -68,48 +69,84 @@ def dispatch_notification(db: Session, user: User, rule_type: str, title: str, m
 def evaluate_morning_rules():
     with SessionLocal() as db:
         users = db.query(User).all()
+        today_str = date.today().isoformat()
+        current_month = today_str[:7]
         for u in users:
-            if datetime.now().weekday() == 0:
-                budgets = db.query(Budget).filter(Budget.user_id == u.id).all()
-                for b in budgets:
-                    if b.spent_amount >= (b.amount / 2):
-                        dispatch_notification(db, u, "budget_checkin", "Budget Update", f"You're about halfway through your {b.category} budget - here's how it's shaping up.")
+            budgets = db.query(Budget).filter(Budget.user_id == u.id, Budget.month == current_month).all()
+            high_budget = None
+            for b in budgets:
+                if b.monthly_limit > 0:
+                    spent = db.query(func.sum(Transaction.amount)).filter(
+                        Transaction.user_id == u.id,
+                        Transaction.category == b.category,
+                        Transaction.direction == 'debit',
+                        Transaction.date.like(f"{current_month}%")
+                    ).scalar() or 0
+                    if spent >= (b.monthly_limit * 0.8):
+                        high_budget = b
                         break
+            
+            if high_budget:
+                dispatch_notification(db, u, "budget_checkin", "High Budget Alert", f"You've used over 80% of your {high_budget.category} budget. Let's pace it today.")
+            elif datetime.now().weekday() == 0:
+                dispatch_notification(db, u, "weekly_reset", "Weekly Reset", "A fresh week is here. Take 2 mins to review last week's spending.")
+            else:
+                dispatch_notification(db, u, "morning_checkin", "Morning Check-in", "Tap to open Dekho and start your day with full financial clarity.")
 
 def evaluate_afternoon_rules():
     with SessionLocal() as db:
         users = db.query(User).all()
+        today_str = date.today().isoformat()
+        yesterday_str = (date.today() - timedelta(days=1)).isoformat()
+        
         for u in users:
             tx_today = db.query(Transaction).filter(
                 Transaction.user_id == u.id,
-                Transaction.date == date.today()
+                Transaction.date == today_str
             ).count()
             
             if tx_today > 0:
-                dispatch_notification(db, u, "daily_reflection", "Daily Reflection", "Today had a balanced flavour - see what shaped it.")
+                dispatch_notification(db, u, "daily_reflection", "Daily Reflection", f"You've logged {tx_today} transactions today. Great job keeping track!")
+                continue
+                
+            large_tx_yesterday = db.query(Transaction).filter(
+                Transaction.user_id == u.id,
+                Transaction.date == yesterday_str,
+                Transaction.amount > 2000
+            ).first()
+            
+            if large_tx_yesterday:
+                dispatch_notification(db, u, "big_spender", "Big Spender", "Yesterday had some heavy spending. Taking it easy today?")
+            else:
+                dispatch_notification(db, u, "afternoon_nudge", "Afternoon Nudge", "Did you grab coffee or lunch? Log it now while it's fresh in your mind.")
 
 def evaluate_night_rules():
     with SessionLocal() as db:
         users = db.query(User).all()
         today_date = date.today()
+        today_str = today_date.isoformat()
         
         for u in users:
             tx_today = db.query(Transaction).filter(
                 Transaction.user_id == u.id,
-                Transaction.date == today_date
+                Transaction.date == today_str
             ).count()
-
-            if tx_today == 0:
-                dispatch_notification(db, u, "log_nudge", "End of Day", "A quiet page today \u2014 anything to add before the day closes?")
-            elif getattr(u, 'current_streak_days', 0) >= 2 and getattr(u, 'last_checkin_date', None) != today_date:
-                dispatch_notification(db, u, "streak_at_risk", "Streak At Risk", f"Your streak's at {u.current_streak_days} \u2014 a quick log keeps it going.")
-
-            if datetime.now().weekday() == 4:
-                dispatch_notification(db, u, "weekend_pattern", "Weekend Ready", "Weekends have tended to look a little different for you - worth a glance before this one starts.")
-
+            
             total_tx = db.query(Transaction).filter(Transaction.user_id == u.id).count()
+            
             if total_tx > 0 and total_tx % 10 == 0:
-                dispatch_notification(db, u, "milestone", "Milestone Reached", f"That's {total_tx} spends logged - a real picture is starting to form.")
+                dispatch_notification(db, u, "milestone", "Milestone Reached", f"That's {total_tx} spends logged. A real picture is forming.")
+            elif tx_today == 0:
+                dispatch_notification(db, u, "log_nudge", "End of Day", "A quiet page today — anything to add before the day closes?")
+            elif datetime.now().weekday() == 4:
+                dispatch_notification(db, u, "weekend_pattern", "Weekend Ready", "Watch out for weekend spending patterns!")
+            else:
+                spent_today = db.query(func.sum(Transaction.amount)).filter(
+                    Transaction.user_id == u.id,
+                    Transaction.date == today_str,
+                    Transaction.direction == 'debit'
+                ).scalar() or 0
+                dispatch_notification(db, u, "night_wrapup", "End of Day Wrap-up", f"You spent INR {spent_today:,.2f} today. Tap to review your dashboard.")
 
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone=timezone('Asia/Kolkata'))

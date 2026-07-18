@@ -12,7 +12,7 @@ from passlib.context import CryptContext
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dekho-super-secret-key-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 days
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -79,6 +79,8 @@ export default function BudgetInsights() {
     { label: 'Buffer', budget: 5000, spent: 0, color: '#EC4899', rgb: '236, 72, 153' }
   ])
 
+  const [loaded, setLoaded] = useState(false)
+
   useEffect(() => {
     const loadData = () => {
       Promise.all([
@@ -108,20 +110,21 @@ export default function BudgetInsights() {
          return d.getMonth() === prevM && d.getFullYear() === prevY
        })
        const initialCats = [
-         { label: 'Essentials', budget: 0, spent: 0, color: '#F59E0B', rgb: '245, 158, 11' },
-         { label: 'Lifestyle', budget: 0, spent: 0, color: '#8B5CF6', rgb: '139, 92, 246' },
-         { label: 'Future-oriented', budget: 0, spent: 0, color: '#10B981', rgb: '16, 185, 129' },
-         { label: 'Buffer', budget: 0, spent: 0, color: '#EC4899', rgb: '236, 72, 153' }
+         { label: 'Essentials', budget: 25000, spent: 0, color: '#F59E0B', rgb: '245, 158, 11' },
+         { label: 'Lifestyle', budget: 10000, spent: 0, color: '#8B5CF6', rgb: '139, 92, 246' },
+         { label: 'Future-oriented', budget: 5000, spent: 0, color: '#10B981', rgb: '16, 185, 129' },
+         { label: 'Buffer', budget: 5000, spent: 0, color: '#EC4899', rgb: '236, 72, 153' }
        ]
 
-       // Handle legacy "Future" label from local storage vs "Future-oriented" from backend
-       if (Array.isArray(bRes) && bRes.length > 0) {
-         const totalB = bRes.reduce((s, cat) => s + (cat.budget || 0), 0)
+       if (Array.isArray(bRes)) {
+         let totalB = bRes.reduce((acc: any, cur: any) => acc + cur.budget, 0)
          if (totalB !== 45000) {
            initialCats.forEach(cat => {
              const bCat = bRes.find((b: any) => b.label === cat.label || (b.label === 'Future-oriented' && cat.label === 'Future'))
              if (bCat) {
                cat.budget = bCat.budget
+             } else {
+               cat.budget = 0 // set to 0 if not defined in user's budget
              }
            })
          }
@@ -159,15 +162,12 @@ export default function BudgetInsights() {
        const tBudget = initialCats.reduce((acc, cat) => acc + cat.budget, 0)
        setTotalBudget(tBudget)
 
-        let cumulativeSpend = 0
+       // Calculate Pacing Data
        const newPaceData = []
-       for (let i = 1; i <= dims; i++) {
-         const ideal = (tBudget / dims) * i
-         let actual = null
-         if (i <= cd) {
-           cumulativeSpend += spendByDay[i]
-           actual = cumulativeSpend
-         }
+       const idealDaily = tBudget / dims
+       for (let i = 1; i <= cd; i++) {
+         const ideal = idealDaily * i
+         const actual = spendByDay.slice(1, i+1).reduce((a,b) => a+b, 0)
          newPaceData.push({ day: i, ideal, actual })
        }
        setPaceData(newPaceData)
@@ -209,6 +209,7 @@ export default function BudgetInsights() {
          newMomData.push({ name: cat.label, last: lastSpent, current, change: changeText, isGood, prevMonthShort, curMonthShort })
        }
        setMomData(newMomData)
+       setLoaded(true)
       })
     }
     
@@ -220,6 +221,29 @@ export default function BudgetInsights() {
   // Diverging Dot Plot Data (MoM)
   // Computed dynamically in loadData
   const maxSpend = Math.max(...momData.flatMap(d => [d.last, d.current]), 1) * 1.1; // 10% padding
+
+  if (loaded && totalBudget === 0) {
+    return (
+      <div className={styles.container}>
+        <header className={styles.header}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+            <ArrowLeft size={24} color="var(--color-on-surface)" />
+          </button>
+          <div className={styles.monthPill}>Insights</div>
+        </header>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', padding: '0 24px', textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--color-on-surface)', marginBottom: '12px', fontFamily: 'var(--font-headline, sans-serif)' }}>Give your money a purpose</h2>
+          <p style={{ fontSize: '15px', color: 'var(--color-muted)', lineHeight: '1.5', marginBottom: '32px' }}>
+            A budget isn't about restriction. It's about deciding what matters to you before the month begins. Take control of your financial journey.
+          </p>
+          <button onClick={() => navigate('/budgets')} style={{ background: 'var(--color-on-surface)', color: 'var(--bg-base)', padding: '16px 32px', borderRadius: '100px', fontWeight: 'bold', fontSize: '16px', border: 'none' }}>
+            Set Your First Budget
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.container}>

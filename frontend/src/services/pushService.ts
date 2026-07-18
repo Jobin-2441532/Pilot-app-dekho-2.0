@@ -27,6 +27,9 @@ export async function subscribeUserToPush() {
 
   const registration = await navigator.serviceWorker.register('/service-worker.js');
   
+  // Wait for the service worker to become active before subscribing
+  await navigator.serviceWorker.ready;
+  
   const subscribeOptions = {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)

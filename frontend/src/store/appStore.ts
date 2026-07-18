@@ -15,6 +15,10 @@ interface UserProfile {
   dekhoWalletBalance?: number
 }
 
+interface CustomEmojis {
+  [category: string]: string;
+}
+
 interface AppState {
   /* Theme */
   theme: Theme
@@ -33,6 +37,10 @@ interface AppState {
   /* Onboarding */
   isOnboarded: boolean
   completeOnboarding: () => void
+
+  /* Custom Emojis */
+  categoryEmojis: CustomEmojis
+  setCategoryEmojis: (emojis: CustomEmojis) => void
 }
 
 const DEFAULT_USER: UserProfile = {
@@ -65,6 +73,10 @@ export const useAppStore = create<AppState>()(
         localStorage.setItem('dekho_onboarded', 'true')
         set({ isOnboarded: true })
       },
+
+      /* ── Custom Emojis ── */
+      categoryEmojis: {},
+      setCategoryEmojis: (emojis) => set((s) => ({ categoryEmojis: { ...s.categoryEmojis, ...emojis } })),
     }),
     {
       name: 'dekho-app-store',          // localStorage key
@@ -72,6 +84,7 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,             // persist theme
         user: state.user,               // persist user prefs
         isOnboarded: state.isOnboarded,
+        categoryEmojis: state.categoryEmojis,
       }),
     }
   )

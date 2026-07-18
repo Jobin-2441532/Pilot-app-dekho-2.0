@@ -37,6 +37,9 @@ async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T
   const token = getToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
     ...(fetchOptions.headers as Record<string, string>),
   }
   if (token) headers['Authorization'] = `Bearer ${token}`
@@ -59,11 +62,17 @@ async function request<T>(endpoint: string, options: ApiOptions = {}): Promise<T
     throw new Error(error || `HTTP ${response.status}`)
   }
 
-  if (response.status === 204) {
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
     return null as any;
   }
 
-  return response.json()
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : (null as any);
+  } catch (err) {
+    console.warn('API returned non-JSON response:', text);
+    return text as any;
+  }
 }
 
 const CACHE_KEY_PREFIX = 'dekho_cache_';
@@ -113,24 +122,28 @@ export const api = {
     return res;
   },
 
-  post: <T>(endpoint: string, body: unknown) => {
+  post: async <T>(endpoint: string, body: unknown) => {
+    const res = await request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) });
     clearCache();
-    return request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) });
+    return res;
   },
 
-  put: <T>(endpoint: string, body: unknown) => {
+  put: async <T>(endpoint: string, body: unknown) => {
+    const res = await request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) });
     clearCache();
-    return request<T>(endpoint, { method: 'PUT', body: JSON.stringify(body) });
+    return res;
   },
 
-  patch: <T>(endpoint: string, body: unknown) => {
+  patch: async <T>(endpoint: string, body: unknown) => {
+    const res = await request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) });
     clearCache();
-    return request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) });
+    return res;
   },
 
-  delete: <T>(endpoint: string) => {
+  delete: async <T>(endpoint: string) => {
+    const res = await request<T>(endpoint, { method: 'DELETE' });
     clearCache();
-    return request<T>(endpoint, { method: 'DELETE' });
+    return res;
   },
 }
 

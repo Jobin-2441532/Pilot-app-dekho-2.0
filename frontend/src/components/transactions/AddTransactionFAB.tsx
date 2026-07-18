@@ -2,11 +2,11 @@ import { useState, useMemo, useEffect } from 'react'
 import { Plus, X, Check, Calculator, Wallet, Tag, FileText, Calendar, Clock, Delete, Utensils, Car, ShoppingBag, ReceiptText, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../../lib/api'
+import { useCategoryEmoji } from '../../utils/categoryUtils'
 import styles from './AddTransactionFAB.module.css'
 
 export default function AddTransactionFAB() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   
   // Form State
   const [amountStr, setAmountStr] = useState('0')
@@ -62,6 +62,11 @@ export default function AddTransactionFAB() {
     })
   }
 
+  const [isNotesOpen, setIsNotesOpen] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'saving' | 'success'>('idle')
+
+  const getCategoryEmoji = useCategoryEmoji()
+
   const handleSubmit = async () => {
     let finalAmount = 0
     try {
@@ -77,7 +82,7 @@ export default function AddTransactionFAB() {
       return
     }
     
-    setIsSubmitting(true)
+    setSubmitStatus('saving')
     try {
       const paymentMode = account === 'Select Account' ? 'Cash' : account
       const finalCat = category === 'Select Category' ? 'Others' : category
@@ -99,26 +104,31 @@ export default function AddTransactionFAB() {
         });
       }
 
+      setSubmitStatus('success')
       window.dispatchEvent(new Event('dekho_data_updated'))
-      setIsOpen(false)
-      setAmountStr('0')
-      setNotes('')
-      setCategory('Select Category')
-      setAccount('Select Account')
-      window.location.reload()
+      
+      setTimeout(() => {
+        setIsOpen(false)
+        setAmountStr('0')
+        setNotes('')
+        setCategory('Select Category')
+        setAccount('Select Account')
+        setSubmitStatus('idle')
+        // window.location.reload() // Removed this hard reload to make it smoother
+      }, 1500) // Show success for 1.5 seconds
+
     } catch (err) {
       console.error('Failed to add transaction', err)
       alert('Failed to add expense.')
-    } finally {
-      setIsSubmitting(false)
+      setSubmitStatus('idle')
     }
   }
 
   const QUICK_CATS = [
-    { label: 'Food', category: 'Food & Dining', icon: Utensils },
-    { label: 'Transport', category: 'Transport', icon: Car },
-    { label: 'Shopping', category: 'Shopping', icon: ShoppingBag },
-    { label: 'Bills', category: 'Bills', icon: ReceiptText },
+    { label: 'Food & Dining', category: 'Food & Dining' },
+    { label: 'Transport', category: 'Transport' },
+    { label: 'Shopping', category: 'Shopping' },
+    { label: 'Bills', category: 'Bills' },
   ]
 
   const formattedDate = useMemo(() => {
@@ -155,13 +165,35 @@ export default function AddTransactionFAB() {
             exit={{ y: '100%' }}
             transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
           >
+            {submitStatus !== 'idle' && (
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(249, 246, 240, 0.9)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                {submitStatus === 'saving' ? (
+                  <>
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#554d44" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    </motion.div>
+                    <p style={{ marginTop: '16px', fontWeight: 'bold', color: '#554d44' }}>Adding expense...</p>
+                  </>
+                ) : (
+                  <>
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }}>
+                      <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Check size={32} color="white" />
+                      </div>
+                    </motion.div>
+                    <p style={{ marginTop: '16px', fontWeight: 'bold', color: '#554d44' }}>Successfully added!</p>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Header */}
             <div className={styles.headerRow}>
               <button onClick={() => setIsOpen(false)} className={styles.iconBtn}>
                 <X size={24} color="#554d44" />
               </button>
               <h2 className={styles.title}>Add Expense</h2>
-              <button onClick={handleSubmit} className={styles.iconBtn} disabled={isSubmitting}>
+              <button onClick={handleSubmit} className={styles.iconBtn} disabled={submitStatus !== 'idle'}>
                 <Check size={24} color="#554d44" />
               </button>
             </div>
@@ -309,21 +341,20 @@ export default function AddTransactionFAB() {
 
               {/* Quick Categories */}
               {!isAddingCustomCategory && (
-                <div className={styles.quickCatsRow}>
-                  {QUICK_CATS.map(cat => {
-                    const Icon = cat.icon
-                    const isActive = category === cat.category || category === cat.label
-                    return (
-                      <button 
-                        key={cat.label} 
-                        className={`${styles.quickCatBtn} ${isActive ? styles.quickCatActive : ''}`}
-                        onClick={() => setCategory(cat.category)}
-                      >
-                        <Icon size={16} />
-                        {cat.label}
-                      </button>
-                    )
-                  })}
+                <div className={styles.quickCats}>
+                  {QUICK_CATS.map(q => (
+                    <button 
+                      key={q.label} 
+                      className={`${styles.quickCatItem} ${category === q.category ? styles.quickCatActive : ''}`}
+                      onClick={() => {
+                        setCategory(q.category)
+                        setIsAddingCustomCategory(false)
+                      }}
+                    >
+                      <span style={{ fontSize: '18px', lineHeight: 1 }}>{getCategoryEmoji(q.category)}</span>
+                      <span>{q.label}</span>
+                    </button>
+                  ))}
                 </div>
               )}
 

@@ -29,18 +29,18 @@
 .modalFull {
   position: fixed;
   inset: 0;
-  background: #f9f6f0;
+  background: var(--bg-base);
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  color: #333;
+  color: var(--color-on-surface);
 }
 
 .headerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 10px 16px;
   background: transparent;
 }
 
@@ -70,20 +70,20 @@
 .contentScroll {
   flex: 1;
   overflow-y: auto;
-  padding: 0 12px 12px;
+  padding: 0 8px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* Amount Card */
 .amountCard {
   background: #ffffff;
   border-radius: 12px;
-  padding: 12px;
+  padding: 6px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
@@ -102,8 +102,8 @@
 }
 
 .amountValue {
-  font-size: 32px;
-  color: #7e7368;
+  font-size: 24px;
+  color: var(--color-on-surface);
   font-weight: 400;
   max-width: 250px;
   overflow-x: auto;
@@ -111,9 +111,9 @@
 }
 
 .calcIconWrap {
-  background: #f5efe6;
-  width: 40px;
-  height: 40px;
+  background: var(--bg-surface-high);
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -123,25 +123,25 @@
 /* Selectors Row */
 .selectorsRow {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .selectCard {
   flex: 1;
   background: transparent;
-  border: 1px solid #eae2d6;
+  border: 1px solid var(--color-outline-var);
   border-radius: 10px;
-  padding: 10px;
+  padding: 6px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   position: relative;
   cursor: pointer;
 }
 
 .selectIcon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -156,13 +156,13 @@
 .selectInfo p {
   margin: 0;
   font-size: 10px;
-  color: #7e7368;
+  color: var(--color-muted);
 }
 
 .selectInfo span {
   font-size: 12px;
   font-weight: 600;
-  color: #4a4238;
+  color: var(--color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -179,24 +179,38 @@
 /* Notes Card */
 .notesCard {
   background: transparent;
-  border: 1px solid #eae2d6;
+  border: 1px solid var(--color-outline-var);
   border-radius: 10px;
-  padding: 10px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
 .notesHeader {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .notesHeader span {
   font-size: 11px;
-  color: #7e7368;
+  color: var(--color-muted);
+}
+
+.notesInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--color-on-surface);
+  width: 100%;
+  font-family: inherit;
+}
+
+.notesInput::placeholder {
+  color: var(--color-muted);
 }
 
 .notesArea {
@@ -204,7 +218,7 @@
   background: transparent;
   resize: none;
   font-size: 13px;
-  color: #4a4238;
+  color: var(--color-on-surface);
   outline: none;
   font-family: inherit;
   min-height: 24px;
@@ -212,13 +226,46 @@
 }
 
 .notesArea::placeholder {
-  color: #aaa299;
+  color: var(--color-muted);
 }
 
 .notesCount {
   font-size: 10px;
-  color: #7e7368;
+  color: var(--color-muted);
   align-self: flex-end;
+}
+
+/* Date Time Row */
+.dateTimeRow {
+  display: flex;
+  gap: 6px;
+}
+
+.dtItem {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--color-outline-var);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+}
+
+.dtItem span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.dtItem input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
 }
 
 /* Quick Categories */
@@ -239,19 +286,42 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  border: 1px solid #eae2d6;
+  border: 1px solid var(--color-outline-var);
   border-radius: 16px;
   background: transparent;
-  color: #4a4238;
+  color: var(--color-on-surface);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
 }
 
+.quickCats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.quickCatItem {
+  background: var(--bg-card);
+  border: 1px solid var(--color-outline-var);
+  border-radius: 10px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.quickCatItem span:last-child {
+  font-size: 10px;
+  text-align: center;
+}
+
 .quickCatActive {
-  background: #f5efe6;
-  border-color: #d1c5b4;
+  background: var(--bg-surface-high);
+  border-color: var(--color-outline);
 }
 
 /* Numpad Grid */
@@ -264,15 +334,15 @@
 }
 
 .numBtn, .numBtnEquals {
-  background: #fdfaf6;
-  border: 1px solid #f0e9df;
+  background: var(--bg-surface-high);
+  border: 1px solid var(--color-outline-var);
   border-radius: 12px;
-  height: 52px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  color: #333;
+  font-size: 20px;
+  color: var(--color-on-surface);
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
@@ -282,14 +352,14 @@
 }
 
 .numBtnOp {
-  background: #efe8dd;
-  border-color: #e6dfd3;
+  background: var(--bg-surface-highest);
+  border-color: var(--color-outline-var);
 }
 
 .numBtnEquals {
-  background: #795740;
-  color: #fff;
-  border-color: #795740;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-color: var(--color-primary);
 }
 
 /* Footer Date/Time */
@@ -297,7 +367,7 @@
   display: flex;
   align-items: center;
   background: transparent;
-  border: 1px solid #eae2d6;
+  border: 1px solid var(--color-outline-var);
   border-radius: 12px;
   margin-top: 8px;
   flex-shrink: 0;
@@ -314,7 +384,7 @@
 .footerDivider {
   width: 1px;
   height: 32px;
-  background: #eae2d6;
+  background: var(--color-outline-var);
 }
 
 .footerInfoNative {
@@ -326,16 +396,16 @@
 
 .footerInfoNative span {
   font-size: 11px;
-  color: #7e7368;
+  color: var(--color-muted);
 }
 
 .visibleInput {
-  border: 1px solid #eae2d6;
+  border: 1px solid var(--color-outline-var);
   border-radius: 6px;
   background: transparent;
   padding: 4px 8px;
   font-size: 13px;
-  color: #4a4238;
+  color: var(--color-on-surface);
   font-family: inherit;
   width: 100%;
 }

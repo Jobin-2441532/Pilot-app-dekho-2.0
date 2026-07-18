@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../lib/api';
 
 interface BreakdownData {
@@ -19,6 +19,7 @@ interface ReflectionData {
 
 export function ReflectionCard() {
   const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery<ReflectionData>({
     queryKey: ['home-reflection'],
@@ -38,6 +39,14 @@ export function ReflectionCard() {
       }
     }
   }, [data, isLoading, isError]);
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['home-reflection'] });
+    };
+    window.addEventListener('dekho_data_updated', handleUpdate);
+    return () => window.removeEventListener('dekho_data_updated', handleUpdate);
+  }, [queryClient]);
 
   const bgColor = "#4A2E1B"; // More brownish instead of orangish
 

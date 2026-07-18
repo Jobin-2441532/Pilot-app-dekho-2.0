@@ -5,7 +5,11 @@ import { SkeletonCard } from '../components/ui/LoadingState'
 import GlobalLoader from '../components/ui/GlobalLoader'
 import { useInsights } from '../hooks/useInsights'
 import styles from './Expenses.module.css'
-import { getCategoryEmoji } from '../utils/categoryUtils'
+import { useCategoryEmoji } from '../utils/categoryUtils'
+import EditTransactionModal from '../components/transactions/EditTransactionModal'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Check } from 'lucide-react'
+import api from '../lib/api'
 
 const API = import.meta.env.PROD ? (import.meta.env.VITE_API_URL || '') : ''
 
@@ -18,12 +22,13 @@ const CATEGORIES = [
 
 export default function TransactionsList() {
   const navigate = useNavigate()
+  const { insights } = useInsights()
+  const getCategoryEmoji = useCategoryEmoji()
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState<any[]>([])
   const [filterMode, setFilterMode] = useState<"All" | "Credit" | "Debit" | "UPI" | "Card">("All")
   const [sortMode, setSortMode] = useState<"Newest" | "Oldest" | "High to Low" | "Low to High">("Newest")
   
-  const { insights } = useInsights()
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const limit = 30
@@ -32,6 +37,7 @@ export default function TransactionsList() {
   const [editTx, setEditTx] = useState<any>(null)
   const [newCat, setNewCat] = useState("")
   const [isReimbursement, setIsReimbursement] = useState(false)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   const loadData = async (pageNum: number) => {
     const userId = localStorage.getItem('dekho_user_id') || 1
@@ -60,43 +66,27 @@ export default function TransactionsList() {
     }
   }
 
-  useEffect(() => {
-    loadData(1)
+  useEffect(() => { 
+    loadData(1) 
+    const handleUpdate = () => {
+      setPage(1)
+      loadData(1)
+    }
+    window.addEventListener('dekho_data_updated', handleUpdate)
+    return () => window.removeEventListener('dekho_data_updated', handleUpdate)
   }, [])
 
   const handleCorrect = async () => {
-    if (!newCat || !editTx) return
-    try {
-      const token = localStorage.getItem('dekho_token')
-      await fetch(`${API}/dashboard/feedback/correct`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({
-          transaction_id: editTx.id,
-          corrected_category: newCat,
-          corrected_sub_category: "General"
-        })
-      })
-      setEditTx(null)
-      setPage(1)
-      loadData(1)
-    } catch {
-      alert("Failed to update category")
-    }
+    // legacy AI teach button - removed in full edit
   }
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("Delete this transaction?")) return
-    const userId = localStorage.getItem('dekho_user_id') || 1
     try {
-      await fetch(`${API}/ml/api/transactions/${id}?user_id=${userId}`, {
-        method: 'DELETE'
-      })
-      setPage(1)
-      loadData(1)
+      await api.delete(`/api/v1/dashboard/transactions/${id}`)
+      window.dispatchEvent(new Event('dekho_data_updated'))
+      setDeleteSuccess(true)
+      setTimeout(() => setDeleteSuccess(false), 2000)
     } catch {
       alert("Failed to delete")
     }
@@ -195,10 +185,14 @@ export default function TransactionsList() {
             return true;
           }).sort((a, b) => {
             if (sortMode === "Newest") {
-              return new Date(b.date || b.tx_date).getTime() - new Date(a.date || a.tx_date).getTime();
+              const diff = new Date(b.date || b.tx_date).getTime() - new Date(a.date || a.tx_date).getTime();
+              if (diff !== 0) return diff;
+              return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
             }
             if (sortMode === "Oldest") {
-              return new Date(a.date || a.tx_date).getTime() - new Date(b.date || b.tx_date).getTime();
+              const diff = new Date(a.date || a.tx_date).getTime() - new Date(b.date || b.tx_date).getTime();
+              if (diff !== 0) return diff;
+              return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
             }
             if (sortMode === "High to Low") {
               return (b.amount || 0) - (a.amount || 0);
@@ -255,55 +249,50 @@ export default function TransactionsList() {
 
       {/* Edit Modal */}
       {editTx && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: '20px'
-        }} onClick={() => setEditTx(null)}>
-          <div style={{
-            background: 'var(--bg-surface)', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '400px',
-            display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative'
-          }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setEditTx(null)} style={{ position: 'absolute', right: '16px', top: '16px', background: 'none', border: 'none', cursor: 'pointer' }}>
-              <X size={20} color="var(--color-muted)" />
-            </button>
-            <h3 style={{ margin: 0, fontFamily: 'var(--font-headline)', color: 'var(--color-on-surface)' }}>Edit Category</h3>
-            
-            <div style={{ color: 'var(--color-muted)', fontSize: '14px', fontFamily: 'var(--font-body)' }}>
-              <div style={{ fontWeight: 'bold', color: 'var(--color-on-surface)' }}>{editTx.merchant}</div>
-              ₹{(editTx.amount || 0).toLocaleString('en-IN')} • Current: {editTx.category}
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--color-muted)', textTransform: 'uppercase' }}>New Category</label>
-              <select 
-                value={newCat} 
-                onChange={e => setNewCat(e.target.value)}
-                style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--color-outline)', background: 'var(--bg-surface)', color: 'var(--color-on-surface)' }}
-              >
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-
-            {editTx.type === "credit" && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" id="reimb" checked={isReimbursement} onChange={e => setIsReimbursement(e.target.checked)} />
-                <label htmlFor="reimb" style={{ fontSize: '14px', color: 'var(--color-on-surface)', cursor: 'pointer' }}>Reimbursement for earlier spending</label>
-              </div>
-            )}
-
-            <button 
-              onClick={handleCorrect}
-              style={{ background: 'var(--color-primary)', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
-            >
-              Save & Learn
-            </button>
-            <div style={{ fontSize: '11px', color: 'var(--color-muted)', textAlign: 'center' }}>
-              💡 This will teach the AI to auto-categorise this merchant in future.
-            </div>
-          </div>
-        </div>
+        <EditTransactionModal 
+          tx={editTx} 
+          onClose={() => {
+            setEditTx(null);
+            setPage(1);
+            loadData(1);
+          }} 
+        />
       )}
+
+      {/* Delete Success Modal */}
+      <AnimatePresence>
+        {deleteSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              style={{
+                background: 'var(--bg-surface)', padding: '32px', borderRadius: '24px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px'
+              }}
+            >
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '32px', background: 'var(--color-primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Check size={32} color="white" />
+              </div>
+              <p style={{ margin: 0, fontFamily: 'var(--font-headline)', fontWeight: 'bold', fontSize: '18px', color: 'var(--color-on-surface)' }}>
+                Transaction Deleted
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

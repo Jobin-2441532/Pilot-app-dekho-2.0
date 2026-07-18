@@ -27,6 +27,17 @@ CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_conv_session ON conversations(session_id);
 """
 
+CREATE_CHAT_SESSIONS = """
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    session_id  TEXT PRIMARY KEY,
+    user_id     TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_chatsess_user ON chat_sessions(user_id);
+"""
+
 CREATE_USER_PREFERENCES = """
 CREATE TABLE IF NOT EXISTS user_preferences (
     user_id             TEXT PRIMARY KEY,
@@ -63,6 +74,7 @@ async def init_db() -> None:
     """Create all tables if they don't exist. Called at app startup."""
     async with _get_conn() as conn:
         await conn.execute(CREATE_CONVERSATIONS)
+        await conn.execute(CREATE_CHAT_SESSIONS)
         await conn.execute(CREATE_USER_PREFERENCES)
         await conn.execute(CREATE_FEEDBACK)
     logger.info("✅ PostgreSQL DB initialised via Settings DATABASE_URL")
@@ -75,11 +87,27 @@ async def save_message(
     intent: str | None = None,
 ) -> None:
     """Persist a single message to the conversations table."""
+    now = datetime.utcnow().isoformat()
     async with _get_conn() as conn:
+        # Automatically create or update session timestamp
+        title_snippet = content[:30] + ("..." if len(content) > 30 else "")
+        if role == "user":
+            await conn.execute(
+                """INSERT INTO chat_sessions (session_id, user_id, title, created_at, updated_at)
+                   VALUES ($1, $2, $3, $4, $4)
+                   ON CONFLICT(session_id) DO UPDATE SET updated_at = $4""",
+                session_id, user_id, title_snippet, now
+            )
+        else:
+            await conn.execute(
+                """UPDATE chat_sessions SET updated_at = $2 WHERE session_id = $1""",
+                session_id, now
+            )
+            
         await conn.execute(
             """INSERT INTO conversations (user_id, session_id, role, content, intent, timestamp)
                VALUES ($1, $2, $3, $4, $5, $6)""",
-            user_id, session_id, role, content, intent, datetime.utcnow().isoformat()
+            user_id, session_id, role, content, intent, now
         )
 
 async def get_conversation_history(user_id: str, limit: int = 50) -> list[dict]:
@@ -97,6 +125,46 @@ async def get_conversation_history(user_id: str, limit: int = 50) -> list[dict]:
             user_id, limit
         )
     return [dict(r) for r in reversed(rows)]
+
+async def get_chat_sessions(user_id: str) -> list[dict]:
+    """Fetch all chat sessions for a user, ordered by latest updated."""
+    async with _get_conn() as conn:
+        rows = await conn.fetch(
+            """SELECT session_id, title, created_at, updated_at
+               FROM chat_sessions
+               WHERE user_id = $1
+               ORDER BY updated_at DESC""",
+            user_id
+        )
+    return [dict(r) for r in rows]
+
+async def get_session_messages(user_id: str, session_id: str) -> list[dict]:
+    """Fetch all messages for a specific session."""
+    async with _get_conn() as conn:
+        rows = await conn.fetch(
+            """SELECT role, content, intent, timestamp, id
+               FROM conversations
+               WHERE user_id = $1 AND session_id = $2
+               ORDER BY id ASC""",
+            user_id, session_id
+        )
+    return [dict(r) for r in rows]
+
+async def rename_session(user_id: str, session_id: str, title: str) -> bool:
+    """Rename a session."""
+    async with _get_conn() as conn:
+        res = await conn.execute(
+            "UPDATE chat_sessions SET title = $1, updated_at = $2 WHERE user_id = $3 AND session_id = $4",
+            title, datetime.utcnow().isoformat(), user_id, session_id
+        )
+    return res.endswith("1")
+
+async def delete_session(user_id: str, session_id: str) -> bool:
+    """Delete a session and all its messages."""
+    async with _get_conn() as conn:
+        await conn.execute("DELETE FROM conversations WHERE user_id = $1 AND session_id = $2", user_id, session_id)
+        res = await conn.execute("DELETE FROM chat_sessions WHERE user_id = $1 AND session_id = $2", user_id, session_id)
+    return res.endswith("1")
 
 async def get_last_session(user_id: str) -> dict | None:
     """
