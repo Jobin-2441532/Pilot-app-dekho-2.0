@@ -27,6 +27,10 @@ async def lifespan(app: FastAPI):
     from app.core.database import init_db
     from app.tasks.notification_engine import start_scheduler
     
+    db_url = settings.DATABASE_URL
+    db_type = "postgres" if "postgresql" in db_url else "sqlite"
+    logger.info(f"DATABASE TYPE: {db_type} | URL starts with: {db_url[:40]}")
+    
     init_db()
     logger.info("Database tables ready (Neon warmup complete).")
     
@@ -154,11 +158,14 @@ async def health(db: Session = Depends(get_db)):
         db_status = "unavailable"
         db_error = str(e)
         
+    db_url = settings.DATABASE_URL
+    db_type = "postgres" if "postgresql" in db_url else "sqlite"
     return {
         "status": "healthy" if db_status == "ok" else "unhealthy",
         "services": {
             "api": "ok",
             "database": db_status,
+            "db_type": db_type,
             "db_error": db_error,
             "minio": "ok" if storage_service.is_available() else "unavailable",
         },
