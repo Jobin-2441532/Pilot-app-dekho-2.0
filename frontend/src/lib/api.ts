@@ -3,7 +3,7 @@
  * Centralised HTTP client for all backend calls.
  * Automatically attaches JWT Bearer token from localStorage.
  * 
- * In production: Vercel rewrites /api/* → https://dekho-api.onrender.com/api/*
+ * In production: Vercel rewrites /api/* → https://dekho-api-u5kn.onrender.com/api/*
  * In dev: Vite proxy rewrites /api/* → http://localhost:8000/api/*
  * Always use relative URLs so the correct proxy handles routing.
  */

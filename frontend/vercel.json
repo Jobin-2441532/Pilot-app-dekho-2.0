@@ -22,7 +22,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://dekho-api.onrender.com/api/:path*"
+      "destination": "https://dekho-api-u5kn.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
