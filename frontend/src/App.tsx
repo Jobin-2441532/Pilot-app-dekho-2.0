@@ -1,6 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
 import AppShell from './components/layout/AppShell'
 /* ── Auth (always needed immediately) ── */
 import Login from './pages/Login'
@@ -34,7 +33,6 @@ const MonthlyWrap = lazy(() => import('./pages/MonthlyWrap'))
 const Settings    = lazy(() => import('./pages/Settings'))
 const AskDekho    = lazy(() => import('./pages/AskDekho'))
 import GlobalLoader from './components/ui/GlobalLoader'
-import SplashLoader from './components/ui/SplashLoader'
 
 
 function PageLoader() {
@@ -76,26 +74,10 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true)
-
-  useEffect(() => {
-    const token = localStorage.getItem('dekho_token')
-    if (!token) {
-      const timer = setTimeout(() => setShowSplash(false), 800)
-      return () => clearTimeout(timer)
-    } else {
-      const timer = setTimeout(() => setShowSplash(false), 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [])
 
   return (
-    <>
-      <AnimatePresence>
-        {showSplash && <SplashLoader key="splash" />}
-      </AnimatePresence>
-      <BrowserRouter>
-        <ScrollToTop />
+    <BrowserRouter>
+      <ScrollToTop />
 
       <Routes>
         {/* ── Login — outside shell ── */}
@@ -154,6 +136,5 @@ export default function App() {
         />
       </Routes>
     </BrowserRouter>
-    </>
   )
 }
