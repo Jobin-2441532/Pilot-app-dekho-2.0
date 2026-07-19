@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../../lib/api'
 import { useCategoryEmoji } from '../../utils/categoryUtils'
 import styles from './AddTransactionFAB.module.css'
+import CustomDialog from '../ui/CustomDialog'
 
 const DEFAULT_CATEGORIES = [
   'Housing & Household', 'Utilities', 'Bills', 'Food & Dining', 'Groceries', 
@@ -55,6 +56,37 @@ export default function EditTransactionModal({ tx, onClose }: EditTransactionMod
   const [newCustomCategoryName, setNewCustomCategoryName] = useState('')
   const [newCustomCategorySection, setNewCustomCategorySection] = useState('Essentials')
   const [isSavingCategory, setIsSavingCategory] = useState(false)
+  
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    confirmText?: string
+    cancelText?: string
+    onConfirm: () => void
+    onCancel?: () => void
+    isDestructive?: boolean
+  } | null>(null)
+
+  const showDialog = (title: string, message: string, onConfirm: () => void = () => {}, isConfirm = false, onCancel = () => {}, isDestructive = false) => {
+    setDialogConfig({
+      isOpen: true,
+      title,
+      message,
+      confirmText: isConfirm ? 'Yes, Delete' : 'OK',
+      cancelText: isConfirm ? 'Cancel' : undefined,
+      onConfirm: () => {
+        onConfirm();
+        setDialogConfig(null);
+      },
+      onCancel: () => {
+        onCancel();
+        setDialogConfig(null);
+      },
+      isDestructive
+    });
+  }
+  
   const getCategoryEmoji = useCategoryEmoji()
   
   useEffect(() => {
@@ -96,7 +128,7 @@ export default function EditTransactionModal({ tx, onClose }: EditTransactionMod
     }
 
     if (finalAmount <= 0) {
-      alert("Please enter a valid amount")
+      showDialog("Invalid Amount", "Please enter a valid amount")
       return
     }
     
@@ -143,7 +175,7 @@ export default function EditTransactionModal({ tx, onClose }: EditTransactionMod
 
     } catch (err) {
       console.error('Failed to update transaction', err)
-      alert('Failed to update expense.')
+      showDialog("Error", "Failed to update expense.")
       setSubmitStatus('idle')
     }
   }
@@ -284,7 +316,7 @@ export default function EditTransactionModal({ tx, onClose }: EditTransactionMod
                       setIsAddingCustomCategory(false);
                       setNewCustomCategoryName('');
                     } catch (err) {
-                      alert('Failed to add category');
+                      showDialog("Error", "Failed to add category")
                     } finally {
                       setIsSavingCategory(false);
                     }
@@ -404,21 +436,34 @@ export default function EditTransactionModal({ tx, onClose }: EditTransactionMod
                         {!DEFAULT_CATEGORIES.includes(sub.label) && (
                           <button
                             type="button"
-                            onClick={async (e) => {
+                            onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm(`Delete custom category "${sub.label}"?`)) {
-                                try {
-                                  await api.delete(`/api/v1/dashboard/budgets/category?label=${encodeURIComponent(sub.label)}`);
-                                  const updatedBudgets = await api.get<any[]>('/api/v1/dashboard/budgets');
-                                  setBudgets(updatedBudgets);
-                                  if (category === sub.label) {
-                                    setCategory('Select Category');
+                              showDialog(
+                                "Delete Custom Category",
+                                `Are you sure you want to delete the custom category "${sub.label}"?`,
+                                async () => {
+                                  try {
+                                    await api.delete(`/api/v1/dashboard/budgets/category?label=${encodeURIComponent(sub.label)}`);
+                                    const updatedBudgets = await api.get<any[]>('/api/v1/dashboard/budgets');
+                                    setBudgets(updatedBudgets);
+                                    if (category === sub.label) {
+                                      setCategory('Select Category');
+                                    }
+                                  } catch (err: any) {
+                                    let errMsg = "Failed to delete category";
+                                    try {
+                                      const parsed = JSON.parse(err.message);
+                                      errMsg = parsed.detail || errMsg;
+                                    } catch {
+                                      errMsg = err.message || errMsg;
+                                    }
+                                    showDialog("Cannot Delete Category", errMsg);
                                   }
-                                } catch (err: any) {
-                                  const errMsg = err?.response?.data?.detail || "Failed to delete category";
-                                  alert(errMsg);
-                                }
-                              }
+                                },
+                                true, // isConfirm
+                                () => {},
+                                true // isDestructive
+                              );
                             }}
                             style={{
                               background: 'transparent',
@@ -455,6 +500,7 @@ export default function EditTransactionModal({ tx, onClose }: EditTransactionMod
           </div>
         </div>
       )}
+      {dialogConfig && <CustomDialog {...dialogConfig} />}
     </div>
   )
 }

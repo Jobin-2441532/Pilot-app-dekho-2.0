@@ -1,7 +1,7 @@
 /* ── Expenses Page — Stitch "Expenses with Spending Heatmap" ── */
 
 import { useState, useEffect } from 'react'
-import { Filter, Search, Edit2, Trash2, X } from 'lucide-react'
+import { Filter, Search, Edit2, Trash2, X, ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { SkeletonCard } from '../components/ui/LoadingState'
@@ -9,6 +9,7 @@ import GlobalLoader from '../components/ui/GlobalLoader'
 import api from '../lib/api'
 import styles from './Expenses.module.css'
 import { useCategoryEmoji, normalizeCategory } from '../utils/categoryUtils'
+import CustomDialog from '../components/ui/CustomDialog'
 
 type InsightTab = 'Total' | 'By Category' | 'Ad hoc Period' | 'None'
 
@@ -127,6 +128,8 @@ export default function Expenses() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
 
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false)
+
   // ML analytics state
   const [dashboardSummary, setDashboardSummary] = useState<any>(null)
   const [paymentMethods, setPaymentMethods] = useState<any[]>([])
@@ -140,6 +143,36 @@ export default function Expenses() {
   const [newCat, setNewCat] = useState("")
   const [isReimbursement, setIsReimbursement] = useState(false)
   const [deleteSuccess, setDeleteSuccess] = useState(false)
+
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    confirmText?: string
+    cancelText?: string
+    onConfirm: () => void
+    onCancel?: () => void
+    isDestructive?: boolean
+  } | null>(null)
+
+  const showDialog = (title: string, message: string, onConfirm: () => void = () => {}, isConfirm = false, onCancel = () => {}, isDestructive = false) => {
+    setDialogConfig({
+      isOpen: true,
+      title,
+      message,
+      confirmText: isConfirm ? 'Yes, Delete' : 'OK',
+      cancelText: isConfirm ? 'Cancel' : undefined,
+      onConfirm: () => {
+        onConfirm();
+        setDialogConfig(null);
+      },
+      onCancel: () => {
+        onCancel();
+        setDialogConfig(null);
+      },
+      isDestructive
+    });
+  }
 
   // Dynamic heatmap data
   const [heatmapData, setHeatmapData] = useState<HeatmapCell[][]>([])
@@ -356,21 +389,29 @@ export default function Expenses() {
       setEditTx(null)
       loadData()
     } catch {
-      alert('Failed to update category')
+      showDialog("Error", "Failed to update category")
     }
   }
 
   const handleDelete = async (id: number | string) => {
-    if (!window.confirm('Delete this transaction?')) return
-    const rawId = String(id).replace(/^t/, '')
-    try {
-      await api.delete(`/api/v1/dashboard/transactions/${rawId}`)
-      window.dispatchEvent(new Event('dekho_data_updated'))
-      setDeleteSuccess(true)
-      setTimeout(() => setDeleteSuccess(false), 2000)
-    } catch {
-      alert('Failed to delete')
-    }
+    showDialog(
+      "Delete Transaction",
+      "Are you sure you want to delete this transaction?",
+      async () => {
+        const rawId = String(id).replace(/^t/, '')
+        try {
+          await api.delete(`/api/v1/dashboard/transactions/${rawId}`)
+          window.dispatchEvent(new Event('dekho_data_updated'))
+          setDeleteSuccess(true)
+          setTimeout(() => setDeleteSuccess(false), 2000)
+        } catch {
+          showDialog("Error", "Failed to delete transaction")
+        }
+      },
+      true, // isConfirm
+      () => {},
+      true // isDestructive
+    )
   }
 
   const pieData = dashboardSummary?.category_breakdown?.slice(0, 8) || []
@@ -398,21 +439,80 @@ export default function Expenses() {
       <div className={styles.header}>
         <p className={styles.pageTitle}>Expenses</p>
         <div className={styles.headerRight}>
-          {/* Working month selector — options built from real transaction data */}
-          <select
-            className={styles.monthPill}
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            style={{ cursor: 'pointer', appearance: 'none', paddingRight: 20, backgroundImage: 'none' }}
-          >
-            {availableMonths.length === 0 ? (
-              <option value={selectedMonth}>{formatMonthLabel(selectedMonth)}</option>
-            ) : (
-              availableMonths.map(ym => (
-                <option key={ym} value={ym}>{formatMonthLabel(ym)}</option>
-              ))
+          {/* Working month selector — custom options built from real transaction data */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowMonthDropdown(!showMonthDropdown)}
+              className={styles.monthPill}
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', border: 'none', background: 'var(--bg-surface-high, #eae5dd)', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--color-on-surface, #4a4238)', fontWeight: '600' }}
+            >
+              <span>{formatMonthLabel(selectedMonth)}</span>
+              <ChevronDown size={14} />
+            </button>
+            
+            {showMonthDropdown && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9000 }} onClick={() => setShowMonthDropdown(false)} />
+                <div style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '100%',
+                  marginTop: '4px',
+                  background: 'var(--bg-base, #f9f6f0)',
+                  border: '1px solid var(--color-outline-var, #eae5dd)',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                  zIndex: 9001,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '6px',
+                  minWidth: '140px'
+                }}>
+                  {availableMonths.length === 0 ? (
+                    <button
+                      onClick={() => setShowMonthDropdown(false)}
+                      style={{
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: 'var(--color-primary, #6b4e71)',
+                        color: 'white',
+                        borderRadius: '8px',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 'bold'
+                      }}
+                    >
+                      {formatMonthLabel(selectedMonth)}
+                    </button>
+                  ) : (
+                    availableMonths.map(ym => (
+                      <button
+                        key={ym}
+                        onClick={() => {
+                          setSelectedMonth(ym);
+                          setShowMonthDropdown(false);
+                        }}
+                        style={{
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: ym === selectedMonth ? 'var(--color-primary, #6b4e71)' : 'transparent',
+                          color: ym === selectedMonth ? 'white' : 'var(--color-on-surface, #4a4238)',
+                          borderRadius: '8px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: ym === selectedMonth ? 'bold' : '500'
+                        }}
+                      >
+                        {formatMonthLabel(ym)}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
             )}
-          </select>
+          </div>
         </div>
       </div>
 
@@ -720,6 +820,7 @@ export default function Expenses() {
           </motion.div>
         )}
       </AnimatePresence>
+      {dialogConfig && <CustomDialog {...dialogConfig} />}
     </div>
   )
 }

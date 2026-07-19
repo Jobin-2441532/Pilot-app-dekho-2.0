@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import styles from './ReviewQueue.module.css'
@@ -19,6 +19,7 @@ export default function ReviewQueue() {
   const [loading, setLoading] = useState(true)
   const [selections, setSelections] = useState<Record<number, string>>({})
   const [reimbursements, setReimbursements] = useState<Record<number, boolean>>({})
+  const [activeDropdownTxId, setActiveDropdownTxId] = useState<number | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -166,19 +167,64 @@ export default function ReviewQueue() {
                     </div>
                   )}
 
-                  <div className={styles.formGroup}>
+                  <div className={styles.formGroup} style={{ position: 'relative' }}>
                     <label className={styles.label}>Correct Category</label>
-                    <select
+                    <button
+                      type="button"
+                      onClick={() => setActiveDropdownTxId(activeDropdownTxId === tx.id ? null : tx.id)}
                       className={styles.select}
-                      value={selections[tx.id] || "Uncategorised"}
-                      onChange={(e) =>
-                        setSelections((s) => ({ ...s, [tx.id]: e.target.value }))
-                      }
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: 'pointer', textAlign: 'left' }}
                     >
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      <span>{selections[tx.id] || "Uncategorised"}</span>
+                      <ChevronDown size={14} />
+                    </button>
+                    
+                    {activeDropdownTxId === tx.id && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 9000 }} onClick={() => setActiveDropdownTxId(null)} />
+                        <div style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: '100%',
+                          marginTop: '4px',
+                          background: 'var(--bg-base, #f9f6f0)',
+                          border: '1px solid var(--color-outline-var, #eae5dd)',
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                          zIndex: 9001,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          padding: '6px'
+                        }}>
+                          {CATEGORIES.map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => {
+                                setSelections((s) => ({ ...s, [tx.id]: c }));
+                                setActiveDropdownTxId(null);
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                border: 'none',
+                                background: (selections[tx.id] || "Uncategorised") === c ? 'var(--color-primary, #6b4e71)' : 'transparent',
+                                color: (selections[tx.id] || "Uncategorised") === c ? 'white' : 'var(--color-on-surface, #4a4238)',
+                                borderRadius: '8px',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: (selections[tx.id] || "Uncategorised") === c ? 'bold' : '500'
+                              }}
+                            >
+                              {c}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <button className={styles.btnPrimary} onClick={() => handleApprove(tx)}>
