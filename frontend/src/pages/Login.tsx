@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Lock, CheckCircle2, FileText, ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Button from '../components/ui/Button'
 import FloatingInput from '../components/ui/FloatingInput'
 import styles from './Onboarding.module.css'
@@ -27,6 +28,20 @@ function parseApiError(data: any, fallback: string): string {
   if (typeof data.detail  === 'string') return data.detail
   if (typeof data.message === 'string') return data.message
   return fallback
+}
+
+/* ── Slogan Animation ────────────────────────────────────────────────────── */
+const SLOGAN = "the habit is the plan"
+const sloganContainerVariant = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.2 }
+  }
+}
+const sloganLetterVariant = {
+  hidden: { opacity: 0, y: 3 },
+  visible: { opacity: 1, y: 0 }
 }
 
 /* ── Statement Card ──────────────────────────────────────────────────────── */
@@ -237,9 +252,28 @@ export default function Login() {
       <div className={styles.screen}>
         <div className={styles.inner}>
           {/* Logo */}
-          <div className={styles.logo} style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className={styles.logo} style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <img src="/logo-nobg.png" alt="Dekho Logo" style={{ width: 120, height: 120, objectFit: 'contain', marginBottom: '-28px' }} />
             <span className={styles.logoName}>Dekho</span>
+            <motion.div
+              variants={sloganContainerVariant}
+              initial="hidden"
+              animate="visible"
+              style={{
+                marginTop: 2,
+                display: 'flex',
+                fontSize: '13px',
+                color: 'var(--color-muted)',
+                fontFamily: 'var(--font-body)',
+                fontStyle: 'italic'
+              }}
+            >
+              {SLOGAN.split('').map((char, i) => (
+                <motion.span key={i} variants={sloganLetterVariant}>
+                  {char === ' ' ? '\u00A0' : char}
+                </motion.span>
+              ))}
+            </motion.div>
           </div>
 
           {/* Heading */}
@@ -334,9 +368,28 @@ export default function Login() {
     <div className={styles.screen}>
       <div className={styles.inner}>
         {/* Logo */}
-        <div className={styles.logo} style={{ marginBottom: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className={styles.logo} style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <img src="/logo-nobg.png" alt="Dekho Logo" style={{ width: 120, height: 120, objectFit: 'contain', marginBottom: '-28px' }} />
           <span className={styles.logoName}>Dekho</span>
+          <motion.div
+            variants={sloganContainerVariant}
+            initial="hidden"
+            animate="visible"
+            style={{
+              marginTop: 2,
+              display: 'flex',
+              fontSize: '13px',
+              color: 'var(--color-muted)',
+              fontFamily: 'var(--font-body)',
+              fontStyle: 'italic'
+            }}
+          >
+            {SLOGAN.split('').map((char, i) => (
+              <motion.span key={i} variants={sloganLetterVariant}>
+                {char === ' ' ? '\u00A0' : char}
+              </motion.span>
+            ))}
+          </motion.div>
         </div>
 
         {/* Selected statement chip (only for signup) */}
