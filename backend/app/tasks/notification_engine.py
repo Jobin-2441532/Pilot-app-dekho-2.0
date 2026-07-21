@@ -109,7 +109,17 @@ def evaluate_morning_rules():
                     if spent >= (b.monthly_limit * 0.8):
                         high_budget = b
                         break
-            
+            if high_budget:
+                # Prevent spam: only alert once every 3 days for high budget
+                three_days_ago = datetime.combine(date.today() - timedelta(days=3), datetime.min.time())
+                recent_alert = db.query(Notification).filter(
+                    Notification.user_id == u.id,
+                    Notification.rule_type == "budget_checkin",
+                    Notification.created_at >= three_days_ago
+                ).first()
+                
+                if recent_alert:
+                    high_budget = None # Fallback to normal morning rules
             if high_budget:
                 dispatch_notification(db, u, "budget_checkin", "High Budget Alert", f"You've used over 80% of your {high_budget.category} budget. Let's pace it today.")
             elif datetime.now().weekday() == 0:
@@ -158,7 +168,7 @@ def evaluate_night_rules():
             
             total_tx = db.query(Transaction).filter(Transaction.user_id == u.id).count()
             
-            if total_tx > 0 and total_tx % 10 == 0:
+            if total_tx > 0 and total_tx % 10 == 0 and tx_today > 0:
                 dispatch_notification(db, u, "milestone", "Milestone Reached", f"That's {total_tx} spends logged. A real picture is forming.")
             elif tx_today == 0:
                 dispatch_notification(db, u, "log_nudge", "End of Day", "A quiet page today — anything to add before the day closes?")
