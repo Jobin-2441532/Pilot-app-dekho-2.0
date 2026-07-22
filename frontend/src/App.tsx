@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import AppShell from './components/layout/AppShell'
 /* ── Auth (always needed immediately) ── */
 import Login from './pages/Login'
+import Feedback from './pages/Feedback'
 
 /* ── Main tab pages ── */
 import Home from './pages/Home'
@@ -146,6 +147,7 @@ export default function App() {
                     {/* ── Special ── */}
                     <Route path="/monthly-wrap" element={<MonthlyWrap />} />
                     <Route path="/settings"     element={<Settings />} />
+                    <Route path="/settings/feedback" element={<Feedback />} />
                     <Route path="/ask"          element={<AskDekho />} />
 
                     {/* ── Legacy redirects ── */}

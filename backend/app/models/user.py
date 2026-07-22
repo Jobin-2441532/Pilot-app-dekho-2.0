@@ -30,4 +30,5 @@ class User(Base):
     recommendations = relationship("Recommendation", back_populates="user")
     merchant_mappings = relationship("MerchantMapping", back_populates="user")
     feedback_logs = relationship("FeedbackLog", back_populates="user")
+    app_feedback = relationship("AppFeedback", back_populates="user")
 

@@ -114,6 +114,18 @@ export default function Settings() {
         </div>
 
         <div className={styles.section} style={{ marginTop: 'var(--space-6)' }}>
+          <p className={styles.sectionTitle}>Support</p>
+          <div className={styles.card}>
+            <button className={styles.rowBtn} onClick={() => navigate('/settings/feedback')}>
+              <div className={styles.rowLeft}>
+                <span>Feedback & Support</span>
+              </div>
+              <ChevronRight size={16} color="var(--text-tertiary)" />
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.section} style={{ marginTop: 'var(--space-6)' }}>
           <div className={styles.card}>
             <button className={styles.rowBtn} onClick={() => {
               localStorage.clear();

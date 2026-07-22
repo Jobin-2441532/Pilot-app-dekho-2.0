@@ -152,3 +152,30 @@ def get_merchant_mappings(
         }
         for r in rows
     ]
+class AppFeedbackCreate(BaseModel):
+    feedback_type: str
+    title: str = None
+    description: str
+    expected_behavior: str = None
+    device_info: str = None
+    rating: int = None
+
+@router.post("/app", status_code=201)
+def submit_app_feedback(
+    body: AppFeedbackCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.feedback import AppFeedback
+    fb = AppFeedback(
+        user_id=current_user.id,
+        feedback_type=body.feedback_type,
+        title=body.title,
+        description=body.description,
+        expected_behavior=body.expected_behavior,
+        device_info=body.device_info,
+        rating=body.rating,
+    )
+    db.add(fb)
+    db.commit()
+    return {"message": "Feedback submitted successfully"}

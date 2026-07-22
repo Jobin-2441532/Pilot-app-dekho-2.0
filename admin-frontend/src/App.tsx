@@ -4,8 +4,6 @@ import {
   ArrowLeft, 
   Users, 
   Receipt, 
-  MessageSquare, 
-  FileText, 
   Coins, 
   TrendingUp, 
   Calendar, 
@@ -82,6 +80,19 @@ interface UserDetails {
   }>
 }
 
+interface FeedbackItem {
+  id: number
+  user_name: string
+  user_email: string
+  feedback_type: string
+  title: string
+  description: string
+  expected_behavior: string
+  device_info: string
+  rating: number
+  created_at: string
+}
+
 export default function AdminPortal() {
   const navigate = useNavigate()
   const [adminUser, setAdminUser] = useState('')
@@ -93,14 +104,16 @@ export default function AdminPortal() {
 
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [users, setUsers] = useState<UserSummary[]>([])
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const [loadingUsers, setLoadingUsers] = useState(true)
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false)
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [txSearch, setTxSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'overview' | 'users'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'feedback'>('overview')
   const [detailTab, setDetailTab] = useState<'transactions' | 'sms'>('transactions')
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -152,6 +165,16 @@ export default function AdminPortal() {
       .catch(err => console.error('Failed to fetch user details:', err))
       .finally(() => setLoadingDetails(false))
   }, [selectedUserId, isAdminAuthorized])
+
+  // Load feedback list
+  useEffect(() => {
+    if (!isAdminAuthorized || activeTab !== 'feedback') return
+    setLoadingFeedbacks(true)
+    api.get<FeedbackItem[]>('/api/v1/admin/feedback')
+      .then(res => setFeedbacks(res))
+      .catch(err => console.error('Failed to fetch feedback:', err))
+      .finally(() => setLoadingFeedbacks(false))
+  }, [activeTab, isAdminAuthorized])
 
   if (!isAdminAuthorized) {
     return (
@@ -377,6 +400,23 @@ export default function AdminPortal() {
           >
             Users Directory
           </button>
+          <button
+            onClick={() => setActiveTab('feedback')}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeTab === 'feedback' ? 'var(--bg-surface, #ffffff)' : 'transparent',
+              color: activeTab === 'feedback' ? 'var(--color-primary, #8B6347)' : 'var(--color-muted, #7e7368)',
+              fontWeight: 600,
+              fontSize: '13px',
+              cursor: 'pointer',
+              boxShadow: activeTab === 'feedback' ? '0 2px 6px rgba(0,0,0,0.04)' : 'none',
+              transition: 'all 0.2s'
+            }}
+          >
+            Feedback
+          </button>
         </div>
       </header>
 
@@ -416,21 +456,6 @@ export default function AdminPortal() {
                   <p style={statValueStyle}>{stats.total_transactions}</p>
                 </div>
 
-                <div style={cardStyle}>
-                  <div style={cardHeaderStyle}>
-                    <span style={statLabelStyle}>Pasted SMS Logs</span>
-                    <MessageSquare size={20} color="#47688B" />
-                  </div>
-                  <p style={statValueStyle}>{stats.total_sms}</p>
-                </div>
-
-                <div style={cardStyle}>
-                  <div style={cardHeaderStyle}>
-                    <span style={statLabelStyle}>Imported Statements</span>
-                    <FileText size={20} color="#B45309" />
-                  </div>
-                  <p style={statValueStyle}>{stats.total_files}</p>
-                </div>
               </div>
             )}
 
@@ -849,6 +874,93 @@ export default function AdminPortal() {
             </div>
           </div>
         )}
+        {/* ── FEEDBACK TAB ── */}
+        {activeTab === 'feedback' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700 }}>User Feedback & Support</h2>
+            </div>
+
+            {loadingFeedbacks ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-muted)' }}>Loading feedback...</div>
+            ) : (
+              <div style={{
+                background: 'var(--bg-surface)',
+                borderRadius: '16px',
+                border: '1px solid var(--bg-surface-high)',
+                overflow: 'hidden'
+              }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead style={{ background: 'var(--bg-app)', borderBottom: '1px solid var(--bg-surface-high)' }}>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--color-muted)', fontWeight: 600 }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--color-muted)', fontWeight: 600 }}>User</th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--color-muted)', fontWeight: 600 }}>Type</th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--color-muted)', fontWeight: 600 }}>Title</th>
+                      <th style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--color-muted)', fontWeight: 600 }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {feedbacks.map(fb => (
+                      <tr key={fb.id} style={{ borderBottom: '1px solid var(--bg-surface-high)' }}>
+                        <td style={{ padding: '12px 16px', whiteSpace: 'nowrap' }}>
+                          {new Date(fb.created_at).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 500 }}>{fb.user_name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--color-muted)' }}>{fb.user_email}</div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            background: 
+                              fb.feedback_type === 'bug' ? '#fee2e2' :
+                              fb.feedback_type === 'feature' ? '#fef3c7' :
+                              fb.feedback_type === 'general' ? '#e0e7ff' : '#dcfce7',
+                            color:
+                              fb.feedback_type === 'bug' ? '#991b1b' :
+                              fb.feedback_type === 'feature' ? '#92400e' :
+                              fb.feedback_type === 'general' ? '#3730a3' : '#166534'
+                          }}>
+                            {fb.feedback_type.toUpperCase()}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontWeight: 500 }}>
+                          {fb.title || '-'}
+                          {fb.rating && <span style={{ marginLeft: '8px', color: '#eab308' }}>{'★'.repeat(fb.rating)}</span>}
+                        </td>
+                        <td style={{ padding: '12px 16px', maxWidth: '300px' }}>
+                          <div style={{ whiteSpace: 'pre-wrap', marginBottom: fb.expected_behavior ? '8px' : '0' }}>{fb.description}</div>
+                          {fb.expected_behavior && (
+                            <div style={{ fontSize: '11px', background: 'var(--bg-app)', padding: '6px', borderRadius: '4px' }}>
+                              <strong>Expected:</strong> {fb.expected_behavior}
+                            </div>
+                          )}
+                          {fb.device_info && (
+                            <div style={{ fontSize: '10px', color: 'var(--color-muted)', marginTop: '4px' }}>
+                              {fb.device_info}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {feedbacks.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'var(--color-muted)' }}>
+                          No feedback found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   )

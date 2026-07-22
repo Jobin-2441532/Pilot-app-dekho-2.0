@@ -159,3 +159,29 @@ def get_user_admin_details(
         "sms_logs": sms_list,
         "category_breakdown": breakdown
     }
+
+# ── GET /api/v1/admin/feedback ───────────────────────────────────────────────
+@router.get("/feedback", dependencies=[Depends(verify_admin)])
+def get_admin_feedback(
+    db: Session = Depends(get_db)
+):
+    from app.models.feedback import AppFeedback
+    feedbacks = db.query(AppFeedback).order_by(AppFeedback.created_at.desc()).all()
+    
+    result = []
+    for fb in feedbacks:
+        user_name = fb.user.name if fb.user else "Unknown"
+        user_email = fb.user.email if fb.user else "Unknown"
+        result.append({
+            "id": fb.id,
+            "user_name": user_name,
+            "user_email": user_email,
+            "feedback_type": fb.feedback_type,
+            "title": fb.title,
+            "description": fb.description,
+            "expected_behavior": fb.expected_behavior,
+            "device_info": fb.device_info,
+            "rating": fb.rating,
+            "created_at": fb.created_at.isoformat() if fb.created_at else None
+        })
+    return result
