@@ -32,8 +32,8 @@ const Goals       = lazy(() => import('./pages/Goals'))
 const MonthlyWrap = lazy(() => import('./pages/MonthlyWrap'))
 const Settings    = lazy(() => import('./pages/Settings'))
 const AskDekho    = lazy(() => import('./pages/AskDekho'))
+import MaintenanceScreen from './pages/MaintenanceScreen'
 import GlobalLoader from './components/ui/GlobalLoader'
-
 
 function PageLoader() {
   return <GlobalLoader />
@@ -74,6 +74,28 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  const [isMaintenance, setIsMaintenance] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/config/maintenance`)
+        const data = await res.json()
+        setIsMaintenance(data.maintenance_mode)
+      } catch (err) {
+        setIsMaintenance(false)
+      }
+    }
+    checkMaintenance()
+  }, [])
+
+  if (isMaintenance === null) {
+    return <PageLoader />
+  }
+
+  if (isMaintenance) {
+    return <MaintenanceScreen />
+  }
 
   return (
     <BrowserRouter>
