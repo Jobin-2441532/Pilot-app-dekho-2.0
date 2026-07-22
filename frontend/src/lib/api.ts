@@ -19,10 +19,10 @@ function getToken(): string | null {
   return localStorage.getItem('dekho_token')
 }
 
-/** Clear auth state and redirect to login */
 export function logout(): void {
   localStorage.removeItem('dekho_token')
   localStorage.removeItem('dekho_onboarded')
+  clearCache()
   window.location.href = '/login'
 }
 

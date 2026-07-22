@@ -16,19 +16,17 @@ export default function AppTour() {
     if (hasChecked) return
     if (location.pathname === '/login' || location.pathname === '/register') return
 
-    // Check backend if user has completed tour
-    api.get<{has_completed_tour: boolean}>('/api/v1/dashboard/profile')
+    // Check backend if user has completed tour, bypass frontend caching
+    api.get<{has_completed_tour: boolean}>('/api/v1/dashboard/profile', { _t: Date.now() })
       .then(res => {
         setHasChecked(true)
         if (res && res.has_completed_tour === false) {
-          // Wait to ensure home screen is fully loaded
-          setTimeout(() => {
-            if (location.pathname !== '/home') {
-              navigate('/home')
-            }
-            // Delay slightly more to let the page render
-            setTimeout(() => setRun(true), 1000)
-          }, 1500)
+          // Check if we are not on home, redirect
+          if (window.location.pathname !== '/home') {
+            navigate('/home')
+          }
+          // Delay slightly to let the home screen render
+          setTimeout(() => setRun(true), 1500)
         }
       })
       .catch(console.error)
