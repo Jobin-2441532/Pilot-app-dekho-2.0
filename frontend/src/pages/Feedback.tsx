@@ -235,7 +235,6 @@ export default function Feedback() {
                   setSelectedType(option.id);
                   setTitle('');
                   setDescription('');
-                  setExpectedBehavior('');
                   setRating(5);
                 }}
                 style={{
