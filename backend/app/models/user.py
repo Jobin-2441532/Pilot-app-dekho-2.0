@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Date, func
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date, Boolean, func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -20,6 +20,7 @@ class User(Base):
     last_checkin_date = Column(Date, nullable=True)
     last_hero_mode = Column(String, nullable=True)
     last_mode_d_date = Column(Date, nullable=True)
+    has_completed_tour = Column(Boolean, default=False)
 
     transactions = relationship("Transaction", back_populates="user")
     savings_goals = relationship("SavingsGoal", back_populates="user")

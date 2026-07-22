@@ -327,7 +327,7 @@ export default function Home() {
             </div>
           </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: '16px' }}>
-          <button className={styles.iconBtn} onClick={() => navigate('/settings')} aria-label="Settings">
+          <button id="tour-settings" className={styles.iconBtn} onClick={() => navigate('/settings')} aria-label="Settings">
             <Settings size={18} strokeWidth={1.75} />
           </button>
         </div>

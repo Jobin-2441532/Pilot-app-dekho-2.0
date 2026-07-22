@@ -301,11 +301,18 @@ def get_profile(db: Session = Depends(get_db), current_user: User = Depends(get_
         "monthlyBudget": user.monthly_budget,
         "dekhoWalletBalance": user.dekho_wallet_balance or 0.0,
         "streak_days": user.current_streak_days or 0,
+        "has_completed_tour": user.has_completed_tour or False,
     }
 
 
 class BudgetUpdate(BaseModel):
     monthly_budget: float
+
+@router.post("/profile/tour-completed")
+def mark_tour_completed(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    current_user.has_completed_tour = True
+    db.commit()
+    return {"status": "success"}
 
 @router.post("/profile/budget")
 def update_budget(

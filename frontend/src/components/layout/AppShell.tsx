@@ -5,6 +5,7 @@ import ChatbotFAB from '../chat/ChatbotFAB'
 import AddTransactionFAB from '../transactions/AddTransactionFAB'
 import ChatPanel from '../chat/ChatPanel'
 import { useTheme } from '../../hooks/useTheme'
+import AppTour from '../ui/AppTour'
 import styles from './AppShell.module.css'
 
 interface AppShellProps {
@@ -39,6 +40,9 @@ export default function AppShell({ children }: AppShellProps) {
 
       {/* Bottom navigation */}
       {!isInsightsPage && <FloatingDock />}
+
+      {/* Interactive App Tour */}
+      <AppTour />
     </div>
   )
 }

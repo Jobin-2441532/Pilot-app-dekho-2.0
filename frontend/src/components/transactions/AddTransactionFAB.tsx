@@ -206,6 +206,7 @@ export default function AddTransactionFAB() {
     <>
       <div className={styles.wrapper}>
         <motion.button
+          id="tour-add-transaction"
           className={`${styles.fab} ${isOpen ? styles.open : ''}`}
           onClick={() => setIsOpen(true)}
           aria-label="Add offline transaction"

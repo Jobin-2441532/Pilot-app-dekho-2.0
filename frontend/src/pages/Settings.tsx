@@ -72,7 +72,7 @@ export default function Settings() {
         <div className={styles.section}>
           <p className={styles.sectionTitle}>Preferences</p>
           <div className={styles.card}>
-            <div className={styles.row}>
+            <div id="tour-theme" className={styles.row}>
               <div className={styles.rowLeft}>
                 {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
                 <span>Dark Mode</span>
@@ -83,7 +83,7 @@ export default function Settings() {
               </label>
             </div>
             <div style={{ height: '1px', background: 'var(--bg-surface-high, #eae5dd)', margin: '0 16px', opacity: 0.5 }} />
-            <div className={styles.row}>
+            <div id="tour-notifications" className={styles.row}>
               <div className={styles.rowLeft}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
                 <span>Push Notifications</span>

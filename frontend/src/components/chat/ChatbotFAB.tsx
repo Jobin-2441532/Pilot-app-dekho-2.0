@@ -10,6 +10,7 @@ export default function ChatbotFAB() {
     <div className={styles.wrapper}>
       <AnimatePresence mode="wait">
         <motion.button
+          id="tour-chatbot"
           key={isChatOpen ? 'close' : 'open'}
           className={`${styles.fab} ${isChatOpen ? styles.open : ''}`}
           onClick={toggleChat}
