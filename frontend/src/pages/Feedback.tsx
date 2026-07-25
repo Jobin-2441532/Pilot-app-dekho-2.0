@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bug, Lightbulb, MessageSquare, PhoneCall } from 'lucide-react';
 import { api } from '../lib/api';
 import CustomDialog from '../components/ui/CustomDialog';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check } from 'lucide-react';
 
 const feedbackOptions = [
   { id: 'bug', icon: Bug, title: 'Report a Bug 🐞', description: 'Allow users to report problems.' },
@@ -19,6 +21,8 @@ export default function Feedback() {
   const [description, setDescription] = useState('');
   const [rating, setRating] = useState<number>(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success'>('idle');
 
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, title: string, message: string, isSuccess: boolean}>({
     isOpen: false,
@@ -44,12 +48,11 @@ export default function Feedback() {
 
     try {
       await api.post('/api/v1/feedback/app', payload);
-      setDialogConfig({
-        isOpen: true,
-        title: 'Thank You!',
-        message: 'Your feedback has been successfully submitted.',
-        isSuccess: true
-      });
+      setSubmitStatus('success');
+      setTimeout(() => {
+        setSubmitStatus('idle');
+        navigate('/settings');
+      }, 2000);
     } catch (error) {
       console.error('Error submitting feedback:', error);
       setDialogConfig({
@@ -112,11 +115,11 @@ export default function Feedback() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={labelStyle}>Bug Title</label>
-            <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} placeholder="What happened?" />
+            <input required type="text" value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} placeholder="Brief description of the bug" />
           </div>
           <div>
             <label style={labelStyle}>Explain the issue</label>
-            <textarea required value={description} onChange={(e) => setDescription(e.target.value)} style={{ ...inputStyle, minHeight: '150px' }} placeholder="Please describe the problem you encountered..." />
+            <textarea required value={description} onChange={(e) => setDescription(e.target.value)} style={{ ...inputStyle, minHeight: '150px' }} placeholder="Tell us what went wrong..." />
           </div>
           <p style={{ fontSize: '12px', color: 'var(--color-muted)', margin: 0 }}>Device Information will be automatically included.</p>
           <button type="submit" disabled={isSubmitting} style={{ ...btnStyle, opacity: isSubmitting ? 0.7 : 1 }}>
@@ -286,6 +289,59 @@ export default function Feedback() {
         onConfirm={closeDialog}
         confirmText="OK"
       />
+
+      {/* Success Overlay */}
+      <AnimatePresence>
+        {submitStatus === 'success' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 9999,
+              backdropFilter: 'blur(4px)'
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: '#4CAF50',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}
+            >
+              <Check size={40} color="white" />
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              style={{
+                marginTop: '20px',
+                color: 'white',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }}
+            >
+              Thank You!
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
