@@ -37,7 +37,11 @@ def send_web_push(subscription: PushSubscription, payload: dict):
                 db.commit()
 
 def dispatch_notification(db: Session, user: User, rule_type: str, title: str, message: str):
-    today_start = datetime.combine(date.today(), datetime.min.time())
+    import pytz
+    ist = timezone('Asia/Kolkata')
+    now_ist = datetime.now(ist)
+    start_of_day_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = start_of_day_ist.astimezone(pytz.UTC).replace(tzinfo=None)
     
     # Define rule categories for morning, afternoon, night
     morning_rules = ["budget_checkin", "weekly_reset", "morning_checkin"]
@@ -93,7 +97,9 @@ def dispatch_notification(db: Session, user: User, rule_type: str, title: str, m
 def evaluate_morning_rules():
     with SessionLocal() as db:
         users = db.query(User).all()
-        today_str = date.today().isoformat()
+        ist = timezone('Asia/Kolkata')
+        now_ist = datetime.now(ist)
+        today_str = now_ist.date().isoformat()
         current_month = today_str[:7]
         for u in users:
             budgets = db.query(Budget).filter(Budget.user_id == u.id, Budget.month == current_month).all()
@@ -111,18 +117,21 @@ def evaluate_morning_rules():
                         break
             if high_budget:
                 # Prevent spam: only alert once every 3 days for high budget
-                three_days_ago = datetime.combine(date.today() - timedelta(days=3), datetime.min.time())
+                import pytz
+                three_days_ago_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=3)
+                three_days_ago_utc = three_days_ago_ist.astimezone(pytz.UTC).replace(tzinfo=None)
+                
                 recent_alert = db.query(Notification).filter(
                     Notification.user_id == u.id,
                     Notification.rule_type == "budget_checkin",
-                    Notification.created_at >= three_days_ago
+                    Notification.created_at >= three_days_ago_utc
                 ).first()
                 
                 if recent_alert:
                     high_budget = None # Fallback to normal morning rules
             if high_budget:
                 dispatch_notification(db, u, "budget_checkin", "High Budget Alert", f"You've used over 80% of your {high_budget.category} budget. Let's pace it today.")
-            elif datetime.now().weekday() == 0:
+            elif now_ist.weekday() == 0:
                 dispatch_notification(db, u, "weekly_reset", "Weekly Reset", "A fresh week is here. Take 2 mins to review last week's spending.")
             else:
                 dispatch_notification(db, u, "morning_checkin", "Morning Check-in", "Tap to open Dekho and start your day with full financial clarity.")
@@ -130,8 +139,10 @@ def evaluate_morning_rules():
 def evaluate_afternoon_rules():
     with SessionLocal() as db:
         users = db.query(User).all()
-        today_str = date.today().isoformat()
-        yesterday_str = (date.today() - timedelta(days=1)).isoformat()
+        ist = timezone('Asia/Kolkata')
+        now_ist = datetime.now(ist)
+        today_str = now_ist.date().isoformat()
+        yesterday_str = (now_ist.date() - timedelta(days=1)).isoformat()
         
         for u in users:
             tx_today = db.query(Transaction).filter(
@@ -157,8 +168,9 @@ def evaluate_afternoon_rules():
 def evaluate_night_rules():
     with SessionLocal() as db:
         users = db.query(User).all()
-        today_date = date.today()
-        today_str = today_date.isoformat()
+        ist = timezone('Asia/Kolkata')
+        now_ist = datetime.now(ist)
+        today_str = now_ist.date().isoformat()
         
         for u in users:
             tx_today = db.query(Transaction).filter(
@@ -172,7 +184,7 @@ def evaluate_night_rules():
                 dispatch_notification(db, u, "milestone", "Milestone Reached", f"That's {total_tx} spends logged. A real picture is forming.")
             elif tx_today == 0:
                 dispatch_notification(db, u, "log_nudge", "End of Day", "A quiet page today — anything to add before the day closes?")
-            elif datetime.now().weekday() == 4:
+            elif now_ist.weekday() == 4:
                 dispatch_notification(db, u, "weekend_pattern", "Weekend Ready", "Watch out for weekend spending patterns!")
             else:
                 spent_today = db.query(func.sum(Transaction.amount)).filter(

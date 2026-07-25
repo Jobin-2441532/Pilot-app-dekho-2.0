@@ -142,7 +142,7 @@ export default function Home() {
 
         const todayStr = today
         const todayTxs = txList.filter((t: any) => String(t.date || '').startsWith(todayStr) && t.direction === 'debit')
-        setTodaySpend(todayTxs.reduce((s: number, t: any) => s + (t.amount ?? 0), 0))
+        setTodaySpend(todayTxs.reduce((s: number, t: any) => s + Number(t.amount || 0), 0))
 
         const dayOfWeek = now.getDay(); // 0 is Sunday, 6 is Saturday
         
