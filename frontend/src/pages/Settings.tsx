@@ -140,7 +140,7 @@ export default function Settings() {
         </div>
 
         <div className={styles.versionInfo}>
-          <p>Dekho v1.0.0</p>
+          <p>Dekho v1.0.0</p><p style={{ marginTop: '4px', fontSize: '12px', color: 'var(--color-muted)' }}>Contact: jobinsambmv99@gmail.com</p>
           <p style={{ marginTop: '4px' }}>Contact: jobinsambmv99@gmail.com</p>
         </div>
       </div>
