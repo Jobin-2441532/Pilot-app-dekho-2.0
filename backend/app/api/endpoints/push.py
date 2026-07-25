@@ -66,3 +66,24 @@ def test_all_push(db: Session = Depends(get_db)):
         })
         count += 1
     return {"status": "sent", "count": count}
+
+@router.get("/cron")
+def run_cron_jobs():
+    from app.tasks.notification_engine import evaluate_morning_rules, evaluate_afternoon_rules, evaluate_night_rules
+    from datetime import datetime
+    import pytz
+    
+    ist = pytz.timezone('Asia/Kolkata')
+    now = datetime.now(ist)
+    
+    if 9 <= now.hour < 14:
+        evaluate_morning_rules()
+        return {"status": "ran morning rules"}
+    elif 14 <= now.hour < 21:
+        evaluate_afternoon_rules()
+        return {"status": "ran afternoon rules"}
+    elif now.hour >= 21 or now.hour < 3:
+        evaluate_night_rules()
+        return {"status": "ran night rules"}
+        
+    return {"status": "no rules to run right now"}
