@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dekho-pilot-cache-v1';
+const CACHE_NAME = 'dekho-pilot-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -40,6 +40,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Only intercept HTTP/HTTPS GET requests (skip chrome-extension, etc.)
   if (!event.request.url.startsWith(self.location.origin) || event.request.method !== 'GET') {
+    return;
+  }
+
+  // Skip API requests so we don't cache stale backend data
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
