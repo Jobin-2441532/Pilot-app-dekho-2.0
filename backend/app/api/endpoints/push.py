@@ -65,7 +65,30 @@ def test_all_push(db: Session = Depends(get_db)):
             "url": "/"
         })
         count += 1
-    return {"status": "sent", "count": count}
+@router.post("/debug-push")
+def debug_push(db: Session = Depends(get_db)):
+    from pywebpush import webpush, WebPushException
+    import os
+    subs = db.query(PushSubscription).all()
+    results = []
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {
+                        "p256dh": sub.p256dh,
+                        "auth": sub.auth
+                    }
+                },
+                data=json.dumps({"title": "Debug", "body": "Debug push", "url": "/"}),
+                vapid_private_key=os.getenv("VAPID_PRIVATE_KEY"),
+                vapid_claims={"sub": os.getenv("VAPID_CLAIMS_EMAIL", "mailto:admin@dekho.app")}
+            )
+            results.append({"endpoint": sub.endpoint, "status": "success"})
+        except Exception as e:
+            results.append({"endpoint": sub.endpoint, "status": "error", "error": str(e), "type": type(e).__name__})
+    return {"results": results}
 
 @router.get("/cron")
 def run_cron_jobs():

@@ -35,6 +35,8 @@ def send_web_push(subscription: PushSubscription, payload: dict):
             with SessionLocal() as db:
                 db.delete(subscription)
                 db.commit()
+    except Exception as ex:
+        print(f"Web Push Critical Error: {ex}")
 
 def dispatch_notification(db: Session, user: User, rule_type: str, title: str, message: str):
     import pytz
