@@ -82,7 +82,7 @@ def debug_push(db: Session = Depends(get_db)):
                     }
                 },
                 data=json.dumps({"title": "Debug", "body": "Debug push", "url": "/"}),
-                vapid_private_key=os.getenv("VAPID_PRIVATE_KEY"),
+                vapid_private_key=os.getenv("VAPID_PRIVATE_KEY", "gQzI9vp_Fyp_gc1TXTSl-ne3djK9O2G-E6in0FSNBEo"),
                 vapid_claims={"sub": os.getenv("VAPID_CLAIMS_EMAIL", "mailto:admin@dekho.app")}
             )
             results.append({"endpoint": sub.endpoint, "status": "success"})
