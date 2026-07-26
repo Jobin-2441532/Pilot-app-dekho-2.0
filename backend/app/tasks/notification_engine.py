@@ -23,7 +23,7 @@ def send_web_push(subscription: PushSubscription, payload: dict):
                 }
             },
             data=json.dumps(payload),
-            vapid_private_key=os.getenv("VAPID_PRIVATE_KEY", "gQzI9vp_Fyp_gc1TXTSl-ne3djK9O2G-E6in0FSNBEo"),
+            vapid_private_key=os.getenv("VAPID_PRIVATE_KEY") or "gQzI9vp_Fyp_gc1TXTSl-ne3djK9O2G-E6in0FSNBEo",
             vapid_claims={
                 "sub": os.getenv("VAPID_CLAIMS_EMAIL", "mailto:admin@dekho.app")
             }
