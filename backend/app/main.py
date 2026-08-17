@@ -108,7 +108,8 @@ from starlette.responses import StreamingResponse
 
 @app.api_route("/api/chat/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"], tags=["chat_proxy"])
 async def chatbot_proxy(request: Request, path: str):
-    url = f"http://127.0.0.1:8002/api/chat/{path}"
+    base_url = os.getenv("CHATBOT_URL", "http://127.0.0.1:8002").rstrip("/")
+    url = f"{base_url}/api/chat/{path}"
     query = request.url.query
     if query:
         url += f"?{query}"
