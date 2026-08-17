@@ -3,6 +3,7 @@ Configuration — loads from .env file via pydantic-settings.
 """
 
 from functools import lru_cache
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,7 +49,7 @@ class Settings(BaseSettings):
     use_mock_data: bool = True
 
     # Auth — JWT (shared secret with V2 main app, HS256)
-    jwt_secret_key: str = "dekho-super-secret-key-change-in-production"
+    jwt_secret_key: str = Field("dekho-super-secret-key-change-in-production", validation_alias="SECRET_KEY")
     auth_enabled: bool = False   # set True when integrated with V2 frontend
 
     # Session / cache TTLs
