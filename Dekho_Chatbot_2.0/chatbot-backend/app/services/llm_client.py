@@ -299,8 +299,8 @@ class LLMClient:
         """
         try:
             client, model = _compat_provider_config(provider)
-        except ValueError:
-            logger.warning("Skipping unknown provider: %s", provider)
+        except Exception as e:
+            logger.warning("Skipping provider %s (init failed): %s", provider, e)
             return None
 
         for attempt in range(self.MAX_RETRIES + 1):
@@ -337,6 +337,8 @@ class LLMClient:
                         "LLM API error | provider=%s attempt=%d status=%d body=%s",
                         provider, attempt + 1, e.status_code, str(e)[:120],
                     )
+                    if e.status_code in (401, 403, 404):
+                        break  # Do not retry auth errors or model not found
             except APIConnectionError:
                 logger.error(
                     "LLM connection error | provider=%s attempt=%d/%d",
@@ -410,8 +412,8 @@ class LLMClient:
         """
         try:
             client, model = _compat_provider_config(provider)
-        except ValueError:
-            logger.warning("Skipping unknown provider: %s", provider)
+        except Exception as e:
+            logger.warning("Skipping provider %s (init failed): %s", provider, e)
             yield None
             return
 
@@ -456,6 +458,8 @@ class LLMClient:
                         "LLM stream API error | provider=%s attempt=%d status=%d body=%s",
                         provider, attempt + 1, e.status_code, str(e)[:120],
                     )
+                    if e.status_code in (401, 403, 404):
+                        break  # Do not retry auth errors or model not found
             except APIConnectionError:
                 logger.error(
                     "LLM stream connection error | provider=%s attempt=%d/%d",
