@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     use_mock_data: bool = True
 
     # Auth — JWT (shared secret with V2 main app, HS256)
-    jwt_secret_key: str = Field("dekho-super-secret-key-change-in-production", validation_alias="SECRET_KEY")
+    jwt_secret_key: str = Field("dekho-super-secret-key-change-in-production", validation_alias="JWT_SECRET_KEY")
     auth_enabled: bool = False   # set True when integrated with V2 frontend
 
     # Session / cache TTLs
