@@ -58,9 +58,9 @@ def _groq_client() -> AsyncOpenAI:
 def _compat_provider_config(provider: str) -> tuple[AsyncOpenAI, str]:
     """Return (client, model) for OpenAI-compatible providers."""
     if provider == "openrouter":
-        return _openrouter_client(), settings.openrouter_model
+        return _openrouter_client(), settings.openrouter_llm_model
     elif provider == "groq":
-        return _groq_client(), settings.groq_model
+        return _groq_client(), settings.groq_llm_model
     else:
         raise ValueError(f"Not an OpenAI-compat provider: {provider!r}")
 
@@ -150,8 +150,8 @@ async def _gemini_generate(
         elapsed = time.perf_counter() - t0
         text = response.text or ""
         logger.info(
-            "LLM response | provider=gemini model=%s latency=%.2fs chars=%d",
-            settings.gemini_model, elapsed, len(text),
+            "Gemini generate success | model=%s time=%.2fs chars=%d",
+            settings.gemini_llm_model, elapsed, len(text),
         )
         return text
 
@@ -190,7 +190,7 @@ async def _gemini_stream(
         sys_instruction, gemini_history = _build_gemini_prompt(system_prompt, user_message, history)
 
         model = genai.GenerativeModel(
-            model_name=settings.gemini_model,
+            model_name=settings.gemini_llm_model,
             system_instruction=sys_instruction,
             generation_config=genai.GenerationConfig(
                 max_output_tokens=max_tokens,
@@ -216,8 +216,8 @@ async def _gemini_stream(
 
         elapsed = time.perf_counter() - t0
         logger.info(
-            "LLM stream complete | provider=gemini model=%s latency=%.2fs chunks=%d",
-            settings.gemini_model, elapsed, token_count,
+            "Gemini stream success | model=%s time=%.2fs tokens~=%d",
+            settings.gemini_llm_model, elapsed, token_count,
         )
 
     except asyncio.TimeoutError:
