@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # Groq (primary provider)
     groq_api_key: str = ""
-    groq_llm_model: str = "llama3-8b-8192"
+    groq_llm_model: str = "qwen/qwen3.6-27b"
     groq_base_url: str = "https://api.groq.com/openai/v1"
 
     # Gemini (secondary — free, high quality)
