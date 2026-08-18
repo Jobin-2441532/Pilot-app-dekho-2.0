@@ -23,16 +23,16 @@ class Settings(BaseSettings):
 
     # Groq (primary provider)
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "llama3-8b-8192"
     groq_base_url: str = "https://api.groq.com/openai/v1"
 
     # Gemini (secondary — free, high quality)
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-3.6-flash"
 
     # OpenRouter (tertiary / last-resort fallback)
     openrouter_api_key: str = ""
-    openrouter_model: str = "meta-llama/llama-3.1-8b-instruct:free"
+    openrouter_model: str = "google/gemma-2-9b-it:free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # Database
