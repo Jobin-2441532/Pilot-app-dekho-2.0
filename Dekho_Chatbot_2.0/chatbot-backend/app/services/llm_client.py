@@ -251,8 +251,8 @@ class LLMClient:
 
     def __init__(self) -> None:
         self.primary   = settings.llm_provider_primary    # default: "groq"
-        self.secondary = settings.llm_provider_secondary   # default: "gemini"
-        self.tertiary  = settings.llm_provider_tertiary    # default: "openrouter"
+        self.secondary = None
+        self.tertiary  = None
 
     # ── Non-streaming ─────────────────────────────────────────────────────────
 
@@ -270,7 +270,7 @@ class LLMClient:
         """
         messages = _build_messages(system_prompt, user_message, conversation_history)
 
-        for provider in (self.primary, self.secondary, self.tertiary):
+        for provider in filter(None, (self.primary, self.secondary, self.tertiary)):
             if provider == "gemini":
                 result = await _gemini_generate(
                     system_prompt, user_message, conversation_history,
@@ -372,7 +372,7 @@ class LLMClient:
         """
         messages = _build_messages(system_prompt, user_message, conversation_history)
 
-        for provider in (self.primary, self.secondary, self.tertiary):
+        for provider in filter(None, (self.primary, self.secondary, self.tertiary)):
             success = False
 
             if provider == "gemini":

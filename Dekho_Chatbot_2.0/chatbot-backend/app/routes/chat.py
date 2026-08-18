@@ -280,6 +280,7 @@ async def stream_generator(
             else:
                 reason = "llm_error"
                 fallback = FALLBACK_RESPONSES.get(intent_result.intent, DEFAULT_FALLBACK)
+                fallback += f"\n\n*(Debug: AI Provider Error - {err_str[:200]})*"
             full_text = fallback
             is_llm_fallback = True
             logger.warning("LLM stream fallback (%s): %s", reason, err_str[:120])
